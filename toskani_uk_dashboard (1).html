@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toskani UK · Commercial Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f5f5f3;color:#1a1a2e;font-size:13px;}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:#1a1a2e;color:#fff;gap:8px;flex-wrap:wrap;}
+.logo{font-size:15px;font-weight:bold;}.logo span{color:#e8846a;}
+.topbar-r{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.lang-tog{display:flex;border:1px solid rgba(255,255,255,.3);border-radius:4px;overflow:hidden;}
+.lang-btn{border:none;padding:4px 10px;font-size:11px;font-weight:bold;background:transparent;color:rgba(255,255,255,.6);cursor:pointer;}
+.lang-btn.on{background:#c45c3a;color:#fff;}
+#fileInput{display:none;}
+.btn{cursor:pointer;font-size:12px;padding:6px 13px;border-radius:4px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-family:Arial,sans-serif;}
+.btn:hover{background:rgba(255,255,255,.1);}
+.btn.primary{background:#c45c3a;border-color:#c45c3a;}
+.btn.primary:hover{background:#a84c2e;}
+.btn.active{background:#1a1a2e;border-color:#e8846a;color:#e8846a;}
+
+/* NAV TABS */
+.navtabs{display:flex;gap:2px;padding:0 20px;background:#16162a;border-bottom:1px solid rgba(255,255,255,.1);}
+.navtab{cursor:pointer;font-size:11px;padding:8px 16px;color:rgba(255,255,255,.5);border-bottom:3px solid transparent;background:none;border-left:none;border-right:none;border-top:none;font-family:Arial,sans-serif;}
+.navtab:hover{color:rgba(255,255,255,.8);}
+.navtab.on{color:#fff;border-bottom-color:#c45c3a;}
+
+/* DISC BAR */
+.discbar{display:flex;align-items:center;gap:6px;padding:7px 20px;background:#fff;border-bottom:1px solid #ddd;flex-wrap:wrap;}
+.discbar label{font-size:11px;color:#777;}
+.dbtn{cursor:pointer;font-size:11px;padding:3px 10px;border-radius:4px;border:1px solid #ccc;background:#fff;color:#555;font-family:Arial,sans-serif;}
+.dbtn.on{background:#c45c3a;color:#fff;border-color:#c45c3a;}
+
+/* MONTH BAR */
+.mbar{display:none;align-items:center;gap:6px;padding:7px 20px;background:#f0ede8;border-bottom:1px solid #ddd;flex-wrap:wrap;}
+.mbar-lbl{font-size:11px;color:#777;white-space:nowrap;}
+.mpill{font-size:11px;padding:3px 12px;border-radius:20px;border:1px solid #ccc;background:#fff;color:#777;cursor:pointer;font-family:Arial,sans-serif;}
+.mpill:hover{border-color:#c45c3a;color:#c45c3a;}
+.mpill.on{background:#c45c3a;color:#fff;border-color:#c45c3a;}
+.dpill{font-size:11px;padding:3px 12px;border-radius:20px;border:1px dashed #bbb;background:#fff;color:#777;cursor:pointer;font-family:Arial,sans-serif;}
+.dpill:hover{border-color:#1a1a2e;color:#1a1a2e;}
+.dpill.on{background:#1a1a2e;color:#e8846a;border-style:solid;}
+
+/* DRILL HEADER */
+.drillhdr{display:none;align-items:center;gap:12px;padding:8px 20px;background:#fff;border-bottom:1px solid #ddd;}
+
+/* MSG */
+.msg{display:none;padding:7px 20px;font-size:12px;border-bottom:1px solid #ddd;}
+.msg.ok{background:#e8f5f0;color:#2a7d5f;}
+.msg.err{background:#fdecea;color:#c0392b;}
+.msg.warn{background:#fef9e7;color:#a67c00;}
+
+/* UPLOAD */
+#uploadScreen{display:flex;align-items:center;justify-content:center;min-height:300px;padding:32px;}
+.dropzone{border:2px dashed #ccc;border-radius:8px;padding:44px 36px;text-align:center;cursor:pointer;max-width:420px;width:100%;transition:all .2s;}
+.dropzone:hover,.dropzone.over{border-color:#c45c3a;background:#fdf5f2;}
+.dropzone h3{font-size:15px;margin-bottom:8px;}
+.dropzone p{font-size:12px;color:#777;line-height:1.6;margin-bottom:14px;}
+
+/* LOADING */
+#loadingScreen{display:none;align-items:center;justify-content:center;min-height:200px;flex-direction:column;gap:12px;}
+.spin{width:28px;height:28px;border:3px solid #ddd;border-top-color:#c45c3a;border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* VIEWS */
+.view{display:none;padding:14px 20px;}
+.view.active{display:block;}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;}
+.kpi{background:#fff;border-radius:6px;padding:11px 13px;border-top:3px solid #ddd;border:1px solid #e8e8e8;border-top-width:3px;}
+.kpi.ac{border-top-color:#c45c3a;}.kpi.gr{border-top-color:#2a7d5f;}.kpi.bl{border-top-color:#2c5f8a;}.kpi.gd{border-top-color:#b8923a;}.kpi.ink{border-top-color:#1a1a2e;}
+.kpi-lbl{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.kpi-val{font-size:21px;font-weight:bold;line-height:1;}
+.kpi-sub{font-size:10px;color:#999;margin-top:2px;}
+
+/* SECTIONS */
+.sec{margin-bottom:16px;}
+.sec-title{font-size:13px;font-weight:bold;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid #e0e0e0;}
+.card{background:#fff;border:1px solid #e8e8e8;border-radius:6px;padding:13px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.g32{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px;}
+
+/* COUNTRY CARDS */
+.chead{font-size:10px;font-weight:bold;padding:7px 12px;margin:-13px -13px 10px;border-radius:6px 6px 0 0;}
+.chead.nl{background:#2c5f8a;color:#fff;}
+.chead.be{background:#1a1a2e;color:#e8846a;}
+.chead.uk{background:#c45c3a;color:#fff;}
+.cstat{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:12px;}
+.cstat:last-child{border-bottom:none;}
+.cstat-lbl{color:#777;}.cstat-val{font-weight:bold;}
+
+/* RANK TABLE */
+.rtbl{width:100%;border-collapse:collapse;}
+.rtbl tr{border-bottom:1px solid #f0f0f0;}
+.rtbl tr:last-child{border-bottom:none;}
+.rtbl td{padding:5px 0;vertical-align:middle;font-size:12px;}
+.rn{color:#bbb;width:20px;text-align:right;padding-right:7px;font-size:10px;}
+.rname{padding-right:5px;}
+.rbar{width:50px;padding:0 6px;}
+.rbar-bg{height:3px;background:#f0ede8;border-radius:2px;overflow:hidden;}
+.rbar-fill{height:100%;background:#c45c3a;border-radius:2px;}
+.rbar-fill.g{background:#2a7d5f;}
+.rval{text-align:right;white-space:nowrap;font-size:11px;font-weight:bold;}
+.rsub{text-align:right;white-space:nowrap;font-size:10px;color:#999;}
+
+/* BOTTOM / MARGIN TABLES */
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{font-size:9px;color:#777;text-align:left;padding:0 6px 6px 0;border-bottom:1px solid #e0e0e0;text-transform:uppercase;letter-spacing:.05em;}
+.tbl th.r{text-align:right;}
+.tbl td{padding:5px 6px 5px 0;font-size:12px;border-bottom:1px solid #f5f5f5;}
+.tbl td.r{text-align:right;font-size:11px;}
+.tbl td.b{font-weight:bold;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(0,0,0,.01);}
+.br{font-size:9px;padding:2px 5px;border-radius:3px;white-space:nowrap;}
+.br-r{background:#fdecea;color:#c0392b;}
+.br-a{background:#fef9e7;color:#a67c00;}
+.br-g{background:#e8f5f0;color:#2a7d5f;}
+
+/* INSIGHTS */
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:14px;}
+.ins{background:#fff;border:1px solid #e8e8e8;border-left:3px solid #c45c3a;padding:11px;border-radius:0 5px 5px 0;}
+.ins.g{border-left-color:#2a7d5f;}.ins.b{border-left-color:#2c5f8a;}.ins.rd{border-left-color:#c0392b;}.ins.gd{border-left-color:#b8923a;}
+.ins-lbl{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.ins-p{font-size:12px;line-height:1.5;color:#555;}
+.ins-p strong{color:#1a1a2e;}
+
+/* SP CARDS */
+.sp-team-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.sp-card{background:#fff;border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;}
+.sp-card-head{padding:8px 13px;font-size:10px;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;}
+.sp-card-head.nl{background:#2c5f8a;color:#fff;}
+.sp-card-head.be{background:#1a1a2e;color:#e8846a;}
+.sp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 13px;border-bottom:1px solid #f5f5f5;font-size:12px;}
+.sp-row:last-child{border-bottom:none;}
+.sp-row-lbl{display:flex;flex-direction:column;gap:1px;}
+.sp-row-name{font-weight:bold;}
+.sp-row-role{font-size:10px;color:#999;}
+.sp-row-val{text-align:right;}
+.sp-row-rev{font-weight:bold;color:#1a1a2e;}
+.sp-row-qty{font-size:10px;color:#777;}
+
+/* MBAR INLINE */
+.mbar-inline{display:flex;align-items:center;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+
+/* VS badge */
+.vup{font-size:10px;padding:1px 5px;border-radius:3px;background:#e8f5f0;color:#2a7d5f;}
+.vdn{font-size:10px;padding:1px 5px;border-radius:3px;background:#fdecea;color:#c0392b;}
+.veq{font-size:10px;padding:1px 5px;border-radius:3px;background:#f0ede8;color:#777;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Toskani <span>UK · Sell-Out</span></span>
+  <div class="topbar-r">
+    <div class="lang-tog">
+      <button class="lang-btn on" onclick="setLang('en',this)">EN</button>
+      <button class="lang-btn" onclick="setLang('es',this)">ES</button>
+    </div>
+    <button class="btn primary" id="addMonthBtn" style="display:none" onclick="backToUploadScreen()">↑ Add month</button>
+    <button class="btn" id="clearBtn" style="display:none" onclick="clearAll()">🗑 Clear all</button>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<div class="navtabs" id="navtabs" style="display:none">
+  <button class="navtab on" onclick="showView('sell',this)" data-i="tabSell">📊 Sell-Out</button>
+  <button class="navtab" onclick="showView('margin',this)" data-i="tabMargin">💰 Margins</button>
+  <button class="navtab" onclick="showView('sales',this)" data-i="tabSales">👤 Sales Reps</button>
+  <button class="navtab" onclick="showView('clients',this)" data-i="tabClients">🏪 Clients</button>
+</div>
+
+<!-- DISC BAR -->
+<div class="discbar" id="discbar" style="display:none">
+  <label data-i="discLbl">Discount:</label>
+  <button class="dbtn" onclick="setDisc('tariff',this)" data-i="discGross">Gross</button>
+  <button class="dbtn" onclick="setDisc('d10',this)">−10%</button>
+  <button class="dbtn on" onclick="setDisc('d125',this)">−12,5%</button>
+  <button class="dbtn" onclick="setDisc('d15',this)">−15%</button>
+</div>
+
+<!-- MONTH BAR (sell-out only) -->
+<div class="mbar" id="mbar">
+  <span class="mbar-lbl" id="mbarLbl">Ver mes:</span>
+  <div id="mpills" style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;"></div>
+</div>
+
+<!-- DRILL HEADER -->
+<div class="drillhdr" id="drillhdr">
+  <button onclick="exitDrill()" style="font-size:12px;padding:4px 10px;border-radius:4px;border:1px solid #ccc;background:#fff;cursor:pointer;" data-i="backLbl">← Overview</button>
+  <div>
+    <div style="font-size:15px;font-weight:bold;" id="drillName"></div>
+    <div style="font-size:11px;color:#777;" id="drillSub"></div>
+  </div>
+</div>
+
+<div class="msg" id="msg"></div>
+
+<!-- UPLOAD -->
+<div id="uploadScreen">
+  <div id="uploadScreenContent" style="max-width:900px;width:100%;"></div>
+</div>
+<div id="loadingScreen" style="display:none"><div class="spin"></div><div style="font-size:12px;color:#777;margin-top:8px;">Processing…</div></div>
+
+<!-- ═══ VIEW: SELL-OUT ═══ -->
+<div class="view" id="viewSell">
+  <div class="kpi-row">
+    <div class="kpi ac"><div class="kpi-lbl" data-i="kRevenue">Revenue</div><div class="kpi-val" id="kTotal">—</div><div class="kpi-sub" id="kRange">—</div></div>
+    <div class="kpi gr"><div class="kpi-lbl" data-i="kUnits">Units</div><div class="kpi-val" id="kQty">—</div><div class="kpi-sub" data-i="kUnitsSub">excl. samples</div></div>
+    <div class="kpi gd"><div class="kpi-lbl" data-i="kLines">Order Lines</div><div class="kpi-val" id="kLines">—</div><div class="kpi-sub" data-i="kLinesSub">transactions</div></div>
+    <div class="kpi bl"><div class="kpi-lbl" data-i="kTicketUK">Avg Ticket</div><div class="kpi-val" id="kTUK">—</div><div class="kpi-sub">£/line</div></div>
+    <div class="kpi ink"><div class="kpi-lbl" data-i="kActiveProds">Active Products</div><div class="kpi-val" id="kActiveProds">—</div><div class="kpi-sub">refs sold</div></div>
+  </div>
+  <div id="overviewSecs">
+    <div class="sec"><div class="sec-title" data-i="secEvol">Monthly Evolution</div><div class="card"><canvas id="cEvol" height="190"></canvas></div></div>
+    <div class="sec"><div class="sec-title" data-i="secMarket">Market Summary</div><div class="g2" id="cGrid"></div></div>
+    <div class="sec"><div class="sec-title" data-i="secTopQty">Units Ranking — Top 20</div><div class="g32"><div class="card"><table class="rtbl" id="tQty"></table></div><div class="card"><canvas id="cQty" height="280"></canvas></div></div></div>
+    <div class="sec"><div class="sec-title" data-i="secTopRev">Revenue Ranking — Top 20</div><div class="g32"><div class="card"><table class="rtbl" id="tRev"></table></div><div class="card"><canvas id="cRev" height="280"></canvas></div></div></div>
+    <div class="sec"><div class="sec-title" data-i="secTicket">Average Ticket per Line</div><div class="card"><canvas id="cTick" height="160"></canvas></div></div>
+    <div class="sec"><div class="sec-title" data-i="secBottom">Lowest Selling — Bottom 20</div><div class="card"><table class="tbl"><thead><tr><th>#</th><th data-i="colProduct">Product</th><th class="r" data-i="colUnits">Units</th><th class="r" data-i="colRev">Revenue</th><th data-i="colAlert">Alert</th></tr></thead><tbody id="tBot"></tbody></table></div></div>
+    <div class="sec"><div class="sec-title" data-i="secInsights">Key Insights</div><div class="ins-grid" id="insBox"></div></div>
+  </div>
+  <div id="drillSecs" style="display:none">
+    <div class="sec"><div class="sec-title" data-i="secMarket">Market Summary</div><div class="g2" id="dCGrid"></div></div>
+    <div class="sec" id="cmpSec" style="display:none">
+      <div class="sec-title" id="cmpTitle"></div>
+      <div class="card"><table class="tbl"><thead><tr><th data-i="colProduct">Product</th><th class="r" data-i="colUnits">Units</th><th class="r" data-i="colRev">Revenue</th><th class="r" data-i="vsCol">vs previous</th></tr></thead><tbody id="cmpBody"></tbody></table></div>
+    </div>
+    <div class="sec"><div class="sec-title" data-i="secTopQty">Units Ranking — Top 20</div><div class="g32"><div class="card"><table class="rtbl" id="dTQty"></table></div><div class="card"><canvas id="dCQty" height="280"></canvas></div></div></div>
+    <div class="sec"><div class="sec-title" data-i="secTopRev">Revenue Ranking — Top 20</div><div class="g32"><div class="card"><table class="rtbl" id="dTRev"></table></div><div class="card"><canvas id="dCRev" height="280"></canvas></div></div></div>
+    <div class="sec"><div class="sec-title" data-i="secBottom">Lowest Selling — Bottom 20</div><div class="card"><table class="tbl"><thead><tr><th>#</th><th data-i="colProduct">Product</th><th class="r" data-i="colUnits">Units</th><th class="r" data-i="colRev">Revenue</th><th data-i="colAlert">Alert</th></tr></thead><tbody id="dBot"></tbody></table></div></div>
+    <div class="sec"><div class="sec-title" data-i="secInsights">Key Insights</div><div class="ins-grid" id="dIns"></div></div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: MÁRGENES ═══ -->
+<div class="view" id="viewMargin">
+  <div style="background:#fff3cd;border-left:4px solid #b8923a;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7a5c00;border-radius:0 4px 4px 0;">
+    <strong data-i="marginNote">Methodology:</strong> <span data-i="marginNoteText">Cost = sell-in (Toskani price → distributor). Sale price = price list. Margin excludes operating costs. Lines without cost or price are excluded.</span>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi ac"><div class="kpi-lbl" data-i="mRevenue">Sale Revenue</div><div class="kpi-val" id="mRev">—</div><div class="kpi-sub" data-i="mRevSub">price list</div></div>
+    <div class="kpi bl"><div class="kpi-lbl" data-i="mCost">Purchase Cost</div><div class="kpi-val" id="mCost">—</div><div class="kpi-sub" data-i="mCostSub">Toskani price</div></div>
+    <div class="kpi gr"><div class="kpi-lbl" data-i="mMargin">Gross Margin £</div><div class="kpi-val" id="mMargin">—</div><div class="kpi-sub" id="mMarginSub">—</div></div>
+    <div class="kpi gd"><div class="kpi-lbl" data-i="mPct">Margen bruto %</div><div class="kpi-val" id="mPct">—</div><div class="kpi-sub" data-i="mPctSub">on sale price</div></div>
+    <div class="kpi ink"><div class="kpi-lbl" data-i="mRefs">Lines Analysed</div><div class="kpi-val" id="mRefsVal">—</div><div class="kpi-sub" id="mRefsSub">of total sell-out</div></div>
+  </div>
+
+  <!-- FILTER BY MONTH -->
+  <div class="mbar-inline" id="margMonthBar">
+    <span style="font-size:11px;color:#777;" data-i="mbarLbl2">Filter month:</span>
+    <button class="mpill on" onclick="setMargMonth('all',this)" data-i="allMonths">All</button>
+  </div>
+
+  <div class="sec"><div class="sec-title" data-i="mSecEvol">Monthly Margin Evolution</div><div class="card"><canvas id="mEvol" height="200"></canvas></div></div>
+
+  <div class="sec"><div class="sec-title" data-i="mSecMonthly">Monthly Detail</div>
+    <div class="card"><table class="tbl" id="mMonthlyTbl">
+      <thead><tr><th data-i="colMonth">Month</th><th class="r" data-i="mRevenue">Ingresos</th><th class="r" data-i="mCost">Coste</th><th class="r" data-i="mMargin">Margen £</th><th class="r" data-i="mPct">Margen %</th><th class="r" data-i="colUnits">Units</th></tr></thead>
+      <tbody id="mMonthlyBody"></tbody>
+    </table></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title" data-i="mSecProducts">Margin by Product</div>
+    <div style="display:flex;gap:5px;margin-bottom:8px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:11px;color:#777;" data-i="sortBy">Sort:</span>
+      <button class="dbtn on" onclick="setSortKey('mg',this)" data-i="sortMargEur">Margin £</button>
+      <button class="dbtn" onclick="setSortKey('mp',this)" data-i="sortMargPct">Margin %</button>
+      <button class="dbtn" onclick="setSortKey('sr',this)" data-i="sortRevenue">Revenue</button>
+    </div>
+    <div class="g32">
+      <div class="card" style="overflow:hidden;">
+        <div style="max-height:500px;overflow-y:auto;">
+          <table class="tbl" id="mProdTbl">
+            <thead style="position:sticky;top:0;background:#fff;"><tr>
+              <th>#</th><th data-i="colProduct">Product</th>
+              <th class="r" data-i="mPvp">Price</th><th class="r" data-i="mCoste">Cost</th>
+              <th class="r" data-i="colUnits">Units</th><th class="r" data-i="mPct">%</th>
+              <th class="r" style="width:70px;"></th>
+              <th class="r" data-i="mMargin">Margen £</th>
+            </tr></thead>
+            <tbody id="mProdBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card"><div style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;" data-i="mTop15">Top 15 by Margin £</div><canvas id="mProdChart" height="460"></canvas></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-title" data-i="mSecLow">Low Margin Products — Alerts</div>
+    <div class="g2">
+      <div class="card"><div style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;" data-i="mTop15Pct">Top 15 by Margin %</div><canvas id="mPctChart" height="300"></canvas></div>
+      <div class="card"><table class="tbl"><thead><tr><th>#</th><th data-i="colProduct">Product</th><th class="r" data-i="mPvp">Price</th><th class="r" data-i="mCoste">Cost</th><th class="r" data-i="mPct">%</th><th></th></tr></thead><tbody id="mLowBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-title" data-i="secInsights">Key Insights</div>
+    <div class="ins-grid" id="mInsBox">
+      <div class="ins g"><div class="ins-lbl">Activate margin analysis</div><p class="ins-p">Upload the sell-in cost file (step 3 in upload screen) to generate margin insights for UK.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEW: VENDEDORES ═══ -->
+<div class="view" id="viewSales">
+  <div style="background:#fdf5f2;border-left:4px solid #c45c3a;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#7a3a1a;border-radius:0 4px 4px 0;">
+    <strong data-i="spNote">Methodology:</strong> <span data-i="spNoteText">Revenue split equally among UK sales reps. Edit the SP array to reflect actual team structure.</span>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi bl"><div class="kpi-lbl" data-i="spVNL1">UK Sales Rep 1</div><div class="kpi-val" id="spKNL1">—</div><div class="kpi-sub">50% UK</div></div>
+    <div class="kpi" style="border-top-color:#5b8fc4">
+      <div class="kpi-lbl" data-i="spTNLG">UK Sales Rep 2</div>
+      <div class="kpi-val" id="spKNLT">—</div>
+      <div class="kpi-sub">50% UK</div>
+      <div style="display:none"><strong id="spKNL2"></strong><strong id="spKNL3"></strong></div>
+    </div>
+    <div class="kpi ac"><div class="kpi-lbl" data-i="spVBE1">UK Sales Rep 3</div><div class="kpi-val" id="spKBE1">—</div><div class="kpi-sub">UK</div></div>
+    <div class="kpi" style="border-top-color:#e8846a"><div class="kpi-lbl" data-i="spVBE2">UK Sales Rep 4</div><div class="kpi-val" id="spKBE2">—</div><div class="kpi-sub">UK</div></div>
+  </div>
+
+
+
+  <div class="sec">
+    <div class="sec-title" data-i="spSecMonthly">Monthly Detail by Sales Rep</div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl" style="min-width:600px;">
+        <thead><tr id="spMonthHdr"></tr></thead>
+        <tbody id="spMonthBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════
+const TR = {
+  es:{
+    clearAll:'Borrar',addMonth:'Añadir mes',discLbl:'Descuento:',discGross:'Bruto',
+    tabSell:'📊 Sell-Out',tabMargin:'💰 Márgenes',tabSales:'👤 Vendedores',
+    mbarLbl:'Ver mes:',backLbl:'← Resumen',
+    dropTitle:'Upload UK Sell-Out Excel files',
+    dropDesc:'Drag one or more Excel files here.<br>Multiple months can be uploaded at once.',
+    selectFiles:'Seleccionar ficheros',processing:'Processing…',
+    kRevenue:'Ingresos',kUnits:'Unidades',kUnitsSub:'excl. samples',
+    kLines:'Líneas',kLinesSub:'transactions',kTicketNL:'Ticket NL',kTicketBE:'Ticket BE',
+    secEvol:'Evolución mensual',secMarket:'Resumen por mercado',
+    secTopQty:'Ranking unidades — Top 20',secTopRev:'Ranking facturación — Top 20',
+    secTicket:'Ticket medio por línea',secBottom:'Menor rotación — Bottom 20',secInsights:'Conclusiones',
+    colProduct:'Producto',colUnits:'Uds.',colRev:'Ingresos',colAlert:'Alerta',colMonth:'Mes',
+    vsCol:'vs anterior',allMonths:'Todos',
+    cHeadUK:'🇬🇧 Reino Unido',lUK:'UK (£)',lUQty:'Uds. UK',lTick:'Ticket medio (£)',kTicketUK:'Ticket Medio',kActiveProds:'Productos activos',kActiveProdsSub:'referencias vendidas',
+    cRev:'Ingresos',cUnits:'Unidades',cLines:'Líneas',cTicket:'Ticket medio',cShare:'% total',
+    badgeCrit:'Crítico',badgeExp:'Caducidad',badgeLow:'Baja rot.',
+    MN:['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+    lUK:'UK (£)',lUQty:'Uds. UK',lTick:'Ticket medio (£)',
+    rangeStr:(lo,hi)=>`Rango: ${lo} – ${hi}`,
+    drillSub:m=>`Detalle de ${m}`,cmpHdr:(m,p)=>`Comparativa con ${p}`,vsNew:'Nuevo',
+    msgAdded:(a,t,m)=>`✓ ${a} líneas. Total: ${t} · ${m} mes(es).`,
+    msgRestored:(t,m)=>`✓ ${t} líneas restauradas · ${m} mes(es).`,
+    msgNoData:'Sin datos.',msgDeleted:'Mes eliminado.',msgCleared:'Datos borrados.',
+    confirmClear:'¿Borrar todos los datos?',
+    // Margin
+    marginNote:'Metodología:',
+    marginNoteText:'Coste = sell-in. Precio venta = tarifa 2025. Sin costes operativos. Ene–May 2026. Líneas sin coste o tarifa excluidas.',
+    mRevenue:'Ingresos venta',mRevSub:'precio tarifa',mCost:'Coste compra',mCostSub:'precio Toskani',
+    mMargin:'Margen bruto £',mPct:'Margen %',mPctSub:'sobre precio venta',mRefs:'Líneas',mRefsSub:'de 5.261 sell-out',
+    mbarLbl2:'Filtrar mes:',mSecEvol:'Evolución mensual de margen',mSecMonthly:'Detalle mensual',
+    mSecProducts:'Margen por producto',mSecLow:'Alertas de margen bajo',
+    mPvp:'PVP',mCoste:'Coste',mTop15:'Top 15 por margen £',mTop15Pct:'Top 15 por margen %',
+    sortBy:'Ordenar:',sortMargEur:'Margen £',sortMargPct:'Margen %',sortRevenue:'Ingresos',
+    mIns1Title:'Margen global',mIns2Title:'Locomotoras',mIns3Title:'⚠ Alerta',
+    mIns4Title:'Márgenes bajos',mIns5Title:'Estabilidad',mIns6Title:'Cobertura',
+    mIns1Text:'Margen bruto ~51% sobre tarifa. Con desc. real 12,5% → ~44–45% efectivo.',
+    mIns2Text:'MesojectGun: £16.900 (52%). DensiHair Capsules: 67,5%. Peelings: 62–68%.',
+    mIns3Text:'Slimming Body Peel: −649%. PVP (£5,30) < coste (£39,70). Error tarifa o cambio formato.',
+    mIns4Text:'TKN Protector (25%), Ascormax (33,7%), Body Spray (36,4%).',
+    mIns5Text:'Margen % estable 50,9–51,8% los 5 meses. Mix de producto consistente.',
+    mIns6Text:'3.668 de 5.261 líneas (ene–abr) + mayo analizadas con coste disponible.',
+    // Salesperson
+    spNote:'Metodología:',spNoteText:'Reparto equitativo: NL → 50%+25%+25%. BE → 50%+50%.',
+    tabClients:'🏪 Clientes',
+    cliTitle:'Análisis de Clientes',cliNote:'Ene–May 2026 · productos comprados y oportunidades de venta',
+    cliSearch:'Buscar cliente…',cliAll:'Todos',cliNL:'🇳🇱 NL',cliBE:'🇧🇪 BE',
+    cliSortRev:'Mayor facturación',cliSortProd:'Más productos',cliSortMonths:'Más activo',
+    cliRevLabel:'Ingresos',cliQtyLabel:'Unidades',cliProdLabel:'Productos',cliMonthsLabel:'Meses activo',
+    cliBought:'Productos comprados',cliOpps:'Oportunidades de venta',
+    cliOppNote:'Productos que otros clientes compran y este cliente aún no tiene',
+    cliBoughtBy:'Comprado por',cliClients:'clientes',
+    cliMonthly:'Evolución mensual',
+    spVNL1:'UK Sales Rep 1',spTNLG:'UK Sales Rep 2',spTNL1:'',spTNL2:'',
+    spVBE1:'UK Sales Rep 3',spVBE2:'UK Sales Rep 4',
+    spPrincipal:'50% UK',spMitad:'50% UK',spMitad2:'50% UK',
+    spSecEvol:'Ventas mensuales por vendedor/a',
+    spSecMonthly:'Detalle mensual por vendedor/a',
+  },
+  en:{
+    clearAll:'Clear',addMonth:'Add month',discLbl:'Discount:',discGross:'Gross',
+    tabSell:'📊 Sell-Out',tabMargin:'💰 Margins',tabSales:'👤 Sales Reps',
+    mbarLbl:'View month:',backLbl:'← Overview',
+    dropTitle:'Upload sell-out Excel files',
+    dropDesc:'Drag Laservision Excel files here.<br>Multiple months can be uploaded at once.',
+    selectFiles:'Select files',processing:'Processing…',
+    kRevenue:'Revenue',kUnits:'Units',kUnitsSub:'excl. samples',
+    kLines:'Order lines',kLinesSub:'transactions',kTicketNL:'Avg ticket NL',kTicketBE:'Avg ticket BE',
+    secEvol:'Monthly evolution',secMarket:'Market summary',
+    secTopQty:'Units ranking — Top 20',secTopRev:'Revenue ranking — Top 20',
+    secTicket:'Average ticket per line',secBottom:'Lowest selling — Bottom 20',secInsights:'Key insights',
+    colProduct:'Product',colUnits:'Units',colRev:'Revenue',colAlert:'Alert',colMonth:'Month',
+    vsCol:'vs previous',allMonths:'All',
+    cHeadUK:'🇬🇧 United Kingdom',lUK:'UK (£)',lUQty:'Units UK',lTick:'Avg Ticket (£)',kTicketUK:'Avg Ticket',kActiveProds:'Active Products',kActiveProdsSub:'refs sold',
+    cRev:'Revenue',cUnits:'Units',cLines:'Order lines',cTicket:'Avg ticket',cShare:'% of total',
+    badgeCrit:'Critical',badgeExp:'Expiry',badgeLow:'Low turn.',
+    MN:['January','February','March','April','May','June','July','August','September','October','November','December'],
+    lUK:'UK (£)',lUQty:'Units UK',lTick:'Avg Ticket (£)',
+    rangeStr:(lo,hi)=>`Range: ${lo} – ${hi}`,
+    drillSub:m=>`Detail for ${m}`,cmpHdr:(m,p)=>`Comparison with ${p}`,vsNew:'New',
+    msgAdded:(a,t,m)=>`✓ ${a} lines. Total: ${t} · ${m} month(s).`,
+    msgRestored:(t,m)=>`✓ ${t} lines restored · ${m} month(s).`,
+    msgNoData:'No data found.',msgDeleted:'Month removed.',msgCleared:'Data cleared.',
+    confirmClear:'Delete all data?',
+    marginNote:'Methodology:',
+    marginNoteText:'Cost = sell-in. Sale price = 2025 price list. No operating costs. Jan–May 2026. Lines without cost or price excluded.',
+    mRevenue:'Sale revenue',mRevSub:'price list',mCost:'Purchase cost',mCostSub:'Toskani price',
+    mMargin:'Gross margin £',mPct:'Margin %',mPctSub:'on sale price',mRefs:'Lines',mRefsSub:'of 5,261 sell-out',
+    mbarLbl2:'Filter month:',mSecEvol:'Monthly margin evolution',mSecMonthly:'Monthly detail',
+    mSecProducts:'Margin by product',mSecLow:'Low margin alerts',
+    mPvp:'Price',mCoste:'Cost',mTop15:'Top 15 by margin £',mTop15Pct:'Top 15 by margin %',
+    sortBy:'Sort:',sortMargEur:'Margin £',sortMargPct:'Margin %',sortRevenue:'Revenue',
+    mIns1Title:'Overall margin',mIns2Title:'Margin leaders',mIns3Title:'⚠ Critical alert',
+    mIns4Title:'Low margins',mIns5Title:'Monthly stability',mIns6Title:'Coverage',
+    mIns1Text:'Gross margin ~51% on list price. With 12.5% real discount → ~44–45% effective.',
+    mIns2Text:'MesojectGun: £16,900 (52%). DensiHair Capsules: 67.5%. Peels: 62–68%.',
+    mIns3Text:'Slimming Body Peel: −649%. List price (£5.30) below cost (£39.70). Price list error.',
+    mIns4Text:'TKN Protector (25%), Ascormax (33.7%), Body Spray (36.4%).',
+    mIns5Text:'Margin % stable at 50.9–51.8% across 5 months.',
+    mIns6Text:'3,668 of 5,261 lines (69.7%) analysed. Rest lack price or cost data.',
+    spNote:'Methodology:',spNoteText:'Equal split: NL → 50%+25%+25%. BE → 50%+50%.',
+    tabClients:'🏪 Clients',
+    cliTitle:'Client Analysis',cliNote:'Jan–May 2026 · products purchased and sales opportunities',
+    cliSearch:'Search client…',cliAll:'All',cliNL:'🇳🇱 NL',cliBE:'🇧🇪 BE',
+    cliSortRev:'Highest revenue',cliSortProd:'Most products',cliSortMonths:'Most active',
+    cliRevLabel:'Revenue',cliQtyLabel:'Units',cliProdLabel:'Products',cliMonthsLabel:'Active months',
+    cliBought:'Products purchased',cliOpps:'Sales opportunities',
+    cliOppNote:'Products other clients buy that this client has not yet ordered',
+    cliBoughtBy:'Bought by',cliClients:'clients',
+    cliMonthly:'Monthly evolution',
+    spVNL1:'UK Sales Rep 1',spTNLG:'UK Sales Rep 2',spTNL1:'',spTNL2:'',
+    spVBE1:'UK Sales Rep 3',spVBE2:'UK Sales Rep 4',
+    spPrincipal:'50% UK',spMitad:'50% UK',spMitad2:'50% UK',
+    spSecEvol:'Monthly sales by salesperson',
+    spSecMonthly:'Monthly detail by salesperson',
+  }
+};
+
+// ═══════════════════════════════════════════════
+// PRICE MAP
+// ═══════════════════════════════════════════════
+const PM={45642010008:24,45642010009:17,45642010141:24,45642010010:26,45642010011:24,45642010012:24,45642010136:20,45642010137:20,45642010138:18,45642010227:24,45642010446:36,45642010445:32,45642010448:38,45642010447:34,45642010450:40,45642010449:36,45642010451:24,45642010261:36,45642010258:32.5,45642010410:40,45642010409:36,45642010406:36,45642010216:29,45642010022:20,45642010195:23,45642010207:60,45642010142:29,45642010143:20,45642010186:25,45642010188:25,45642010187:25,45642010192:25,45642010194:25,45642010193:25,45642010189:11,45642010024:29,45642010180:15,45642010382:26,45642010139:15,45642010577:21,45642010578:23,45642010579:25,45642010539:24,45642010288:20,45642010538:25,45642010028:25,45642010027:25,45642010089:22,45642010090:28,45642010531:39,45642010532:85,45642010533:73,45642010528:22.5,45642010527:23.25,45642010581:78,45642010557:60,45642010558:80,45642010559:62,45642010560:82,45642010030:42,45642010518:66,45642010516:35,45642010517:44,45642010416:55,45642010419:55,45642010420:60.5,45642010421:66,45642010422:55,45642010417:55,45642010415:54.5,45642010453:66,45642010418:55,45642010423:55,45642010424:64,45642010082:100.5,45642010081:93,45642010080:108,45642010087:111.5,45642010083:111.5,45642010084:111.5,45642010086:111.5,45642010085:111.5,45642010046:61,45642010052:79.5,45642010056:46,45642010058:54.5,45642010064:25.5,45642010063:17,45642010055:42.5,45642010059:54.5,45642010062:27.5,45642010038:15,45642010044:33.5,45642010040:28.5,45642010047:27,45642010039:25.5,45642010041:31.5,45642010042:19,45642010043:24.5,45642010045:37.5,45642010048:36.5,45642010049:44,45642010050:54.5,45642010057:84,45642010060:27.5,45642010061:14.5,45642010182:103.5,45642010183:106,45642010184:98.5,45642010185:68.5,45642010222:95,45642010223:112.5,45642010224:81.5,45642010122:21,45642010124:23,45642010112:37,45642010114:41,45642010115:31,45642010117:33,45642010118:34,45642010120:37,45642010305:52,45642010306:52,45642010126:42,45642010127:42,45642010130:42,45642010214:42,45642010132:14,45642010133:8.1,45642010134:12.5,45642010135:6,45642010307:110,45642010310:110,45642010309:99,45642010308:110,45642010005:130,45642010035:3.85,45642010215:3.85,45642010036:3.85,45642010144:3.85,45642010236:5.3,45642010452:77.5,45642010564:77.5,45642010543:84,45642010544:84,45642010545:84,45642010546:84,45642010547:112,45642010373:60,45642010371:66,45642010372:72,45642010225:53,45642010201:2500,45642010202:120,45642010203:120,45925010000:850,45925010008:1360,45925010001:230,45925010002:230,45925010003:230,45925010004:27,45925010005:26,45925010006:57,45925010007:57,45642010233:170,45642010208:8,45642010426:350,45642010303:110,45642010304:110};
+
+// ═══════════════════════════════════════════════
+// MARGIN DATA (pre-calculated from sell-in)
+// ═══════════════════════════════════════════════
+const MARGIN_MONTHLY = [
+  {m:'Enero',mn:1,sell_rev:82799.0,cost:39909.46,margin:42889.54,qty:2322},
+  {m:'Febrero',mn:2,sell_rev:70019.0,cost:34028.46,margin:35990.54,qty:1946},
+  {m:'Marzo',mn:3,sell_rev:114229.5,cost:55447.97,margin:58781.53,qty:3089},
+  {m:'Abril',mn:4,sell_rev:69561.9,cost:34081.42,margin:35480.48,qty:2059},
+  {m:'Mayo',mn:5,sell_rev:89197.5,cost:43784.56,margin:45412.94,qty:2470}
+];
+
+const MARGIN_PRODS = [
+  {n:'MesojectGun',qty:15.0,sp:2500.0,cp:1200.0,sr:37500.0},
+  {n:'Total Recovery cream',qty:785.0,sp:29.0,cp:14.64,sr:22765.0},
+  {n:'Bamboo hydratonic',qty:713.0,sp:17.0,cp:9.0,sr:12121.0},
+  {n:'Energizing Cleanser',qty:495.0,sp:24.0,cp:11.45,sr:11880.0},
+  {n:'Salisome Duo',qty:99.0,sp:110.0,cp:55.76,sr:10890.0},
+  {n:'Purifying cleanser',qty:421.0,sp:24.0,cp:12.27,sr:10104.0},
+  {n:'Lumicen Gel',qty:114.0,sp:84.0,cp:42.38,sr:9576.0},
+  {n:'DensiHair Boost Complex',qty:84.0,sp:112.0,cp:55.69,sr:9408.0},
+  {n:'TKN HA XS 2%',qty:94.0,sp:93.0,cp:46.41,sr:8742.0},
+  {n:'Radiance Daily cream',qty:300.0,sp:29.0,cp:14.56,sr:8700.0},
+  {n:'NCPR',qty:77.0,sp:111.5,cp:56.69,sr:8585.5},
+  {n:'TKN HA MW 2%',qty:84.0,sp:100.5,cp:50.23,sr:8442.0},
+  {n:'Night Reverse intensive cream & mask',qty:227.0,sp:36.0,cp:18.13,sr:8172.0},
+  {n:'Imperfection Peel Booster',qty:392.0,sp:20.0,cp:10.2,sr:7840.0},
+  {n:'Radiance Ultimate mesoserum',qty:217.0,sp:36.0,cp:18.52,sr:7812.0},
+  {n:'Sun Shiel-D Fluid Cream Color',qty:339.0,sp:23.0,cp:11.5,sr:7797.0},
+  {n:'Sun Protection cream',qty:516.0,sp:15.0,cp:7.63,sr:7740.0},
+  {n:'Skin Architect mask (10 maskers)',qty:96.0,sp:77.5,cp:31.35,sr:7440.0},
+  {n:'Sun Shiel-D Fluid Cream',qty:345.0,sp:21.0,cp:10.86,sr:7245.0},
+  {n:'Total Recovery gel',qty:451.0,sp:15.0,cp:7.69,sr:6765.0},
+  {n:'Total Recovery gel PRO',qty:101.0,sp:66.0,cp:27.76,sr:6666.0},
+  {n:'Lactisome Duo',qty:67.0,sp:99.0,cp:55.64,sr:6633.0},
+  {n:'Purifying cream',qty:227.0,sp:29.0,cp:14.75,sr:6583.0},
+  {n:'Lumicen',qty:130.0,sp:46.0,cp:23.23,sr:5980.0},
+  {n:'DensiHair Boost capsules',qty:293.0,sp:20.0,cp:6.5,sr:5860.0},
+  {n:'Mandesome Duo',qty:51.0,sp:110.0,cp:55.0,sr:5610.0},
+  {n:'DensiHair Boost Lotion',qty:229.0,sp:24.0,cp:9.12,sr:5496.0},
+  {n:'Myotec Eye Lift advanced eye contour',qty:213.0,sp:24.0,cp:12.18,sr:5112.0},
+  {n:'Hair Cocktail Plus',qty:79.0,sp:64.0,cp:32.46,sr:5056.0},
+  {n:'TKN HA Glowcomplex',qty:45.0,sp:108.0,cp:54.05,sr:4860.0},
+  {n:'Clarifying Peel Booster',qty:239.0,sp:20.0,cp:10.21,sr:4780.0},
+  {n:'Glycosome Duo',qty:42.0,sp:110.0,cp:56.47,sr:4620.0},
+  {n:'Purifying peel',qty:105.0,sp:42.0,cp:14.4,sr:4410.0},
+  {n:'Pro Age mask (10 maskers)',qty:54.0,sp:77.5,cp:46.11,sr:4185.0},
+  {n:'Retin Pro Age advanced cream',qty:122.0,sp:34.0,cp:17.38,sr:4148.0},
+  {n:'RCPR',qty:36.0,sp:111.5,cp:55.69,sr:4014.0},
+  {n:'Restart Boost Complex',qty:47.0,sp:84.0,cp:41.76,sr:3948.0},
+  {n:'Anti-aging + HA ampullen',qty:156.0,sp:25.0,cp:12.7,sr:3900.0},
+  {n:'W-Tranex Boost Complex',qty:46.0,sp:84.0,cp:41.76,sr:3864.0},
+  {n:'Mandelic peel 30%',qty:99.0,sp:37.0,cp:12.6,sr:3663.0},
+  {n:'Retiseal Peel Booster',qty:201.0,sp:18.0,cp:8.0,sr:3618.0},
+  {n:'Glacier Pro Age advanced cream',qty:110.0,sp:32.0,cp:16.48,sr:3520.0},
+  {n:'Anti-aging Cocktail',qty:64.0,sp:55.0,cp:27.3,sr:3520.0},
+  {n:'Unique Pro Age advanced cream',qty:97.0,sp:36.0,cp:18.27,sr:3492.0},
+  {n:'Antistress mask',qty:125.0,sp:26.0,cp:11.36,sr:3250.0},
+  {n:'Energizing Cleanser PRO',qty:92.0,sp:35.0,cp:15.55,sr:3220.0},
+  {n:'Night Reverse advanced serum',qty:77.0,sp:40.0,cp:17.43,sr:3080.0},
+  {n:'Glacier Pro Age advanced serum',qty:84.0,sp:36.0,cp:18.72,sr:3024.0},
+  {n:'Photo-aging peel',qty:70.0,sp:42.0,cp:14.4,sr:2940.0},
+  {n:'Mandelic peel 50%',qty:68.0,sp:41.0,cp:14.04,sr:2788.0},
+  {n:'Neutralizing Solution',qty:197.0,sp:14.0,cp:7.11,sr:2758.0},
+  {n:'Myotec',qty:50.0,sp:54.5,cp:27.3,sr:2725.0},
+  {n:'Sun Shiel-D Body & Facial Spray',qty:107.0,sp:25.0,cp:15.9,sr:2675.0},
+  {n:'Glycolic peel 50%',qty:72.0,sp:37.0,cp:12.6,sr:2664.0},
+  {n:'A-OX 360 Cocktail',qty:44.0,sp:60.5,cp:30.03,sr:2662.0},
+  {n:'Dexanyl',qty:79.0,sp:33.5,cp:17.89,sr:2646.5},
+  {n:'Sun Protection cream PRO',qty:62.0,sp:42.0,cp:18.37,sr:2604.0},
+  {n:'TKN HA 3',qty:46.0,sp:53.0,cp:27.3,sr:2438.0},
+  {n:'Lactic peel 30%',qty:78.0,sp:31.0,cp:10.44,sr:2418.0},
+  {n:'Salicylic peel 30%',qty:103.0,sp:23.0,cp:10.5,sr:2369.0},
+  {n:'Sun Shiel-D Fluid Cream BACKORDER',qty:109.0,sp:21.0,cp:10.86,sr:2289.0},
+  {n:'Nutritive scrub',qty:93.0,sp:24.0,cp:10.24,sr:2232.0},
+  {n:'Radiance eye contour',qty:110.0,sp:20.0,cp:10.17,sr:2200.0},
+  {n:'Retin Pro Age advanced serum',qty:57.0,sp:38.0,cp:20.01,sr:2166.0},
+  {n:'Degreasing Solution 100 ml',qty:166.0,sp:12.5,cp:6.75,sr:2075.0},
+  {n:'ECPR',qty:18.0,sp:111.5,cp:56.8,sr:2007.0},
+  {n:'Soothing Body Peel',qty:83.0,sp:24.0,cp:12.72,sr:1992.0},
+  {n:'Vitaflash ampullen',qty:180.0,sp:11.0,cp:5.72,sr:1980.0},
+  {n:'Lipo Proteoglycans ampullen',qty:78.0,sp:25.0,cp:14.99,sr:1950.0},
+  {n:'Purifying Cocktail',qty:29.0,sp:66.0,cp:33.36,sr:1914.0},
+  {n:'Glycolic peel 20%',qty:55.0,sp:34.0,cp:11.16,sr:1870.0},
+  {n:'Purifying Cleanser PRO',qty:42.0,sp:44.0,cp:19.47,sr:1848.0},
+  {n:'Rejuvenating peel',qty:42.0,sp:42.0,cp:16.0,sr:1764.0},
+  {n:'Unique Pro Age advanced serum',qty:39.0,sp:40.0,cp:21.2,sr:1560.0},
+  {n:'Radiance Cocktail',qty:27.0,sp:55.0,cp:27.3,sr:1485.0},
+  {n:'Regenerating Cocktail',qty:26.0,sp:55.0,cp:27.3,sr:1430.0},
+  {n:'Purifying Scrub',qty:59.0,sp:24.0,cp:10.3,sr:1416.0},
+  {n:'Lactic peel 50%',qty:40.0,sp:33.0,cp:12.6,sr:1320.0},
+  {n:'Spot Out cream (tht 9/26)',qty:21.0,sp:60.0,cp:16.5,sr:1260.0},
+  {n:'After cream',qty:44.0,sp:26.0,cp:9.87,sr:1144.0},
+  {n:'Radiance peel',qty:27.0,sp:42.0,cp:14.4,sr:1134.0},
+  {n:'Purifying ampullen',qty:45.0,sp:25.0,cp:14.99,sr:1125.0},
+  {n:'B-Hidroxin',qty:37.0,sp:28.5,cp:14.2,sr:1054.5},
+  {n:'Radiance ampullen',qty:42.0,sp:25.0,cp:12.5,sr:1050.0},
+  {n:'Saliforo',qty:55.0,sp:17.0,cp:8.52,sr:935.0},
+  {n:'Purifying intensive serum',qty:46.0,sp:20.0,cp:10.5,sr:920.0},
+  {n:'Anti-pollution ampullen',qty:36.0,sp:25.0,cp:13.5,sr:900.0},
+  {n:'Spot Out cream',qty:15.0,sp:60.0,cp:16.5,sr:900.0},
+  {n:'Artichoke Plus',qty:32.0,sp:22.0,cp:11.33,sr:704.0},
+  {n:'DM-Silk',qty:10.0,sp:61.0,cp:30.58,sr:610.0},
+  {n:'Glutamax C',qty:20.0,sp:27.0,cp:13.6,sr:540.0},
+  {n:'Repairing gel',qty:20.0,sp:25.0,cp:14.0,sr:500.0},
+  {n:'Firming Cocktail',qty:9.0,sp:55.0,cp:27.3,sr:495.0},
+  {n:'Silhouette gel',qty:13.0,sp:25.0,cp:12.5,sr:325.0},
+  {n:'Ascormax',qty:20.0,sp:15.0,cp:9.95,sr:300.0},
+  {n:'Firming gel (tht 8/26)',qty:9.0,sp:25.0,cp:12.5,sr:225.0},
+  {n:'Rutinel',qty:7.0,sp:27.5,cp:15.54,sr:192.5},
+  {n:'TKN Protector',qty:31.0,sp:6.0,cp:4.5,sr:186.0},
+  {n:'After cream (tht 8/26)',qty:6.0,sp:26.0,cp:9.87,sr:156.0},
+  {n:'Silicor',qty:5.0,sp:25.5,cp:16.43,sr:127.5},
+  {n:'Localized Cellulite Cocktail',qty:2.0,sp:54.5,cp:28.94,sr:109.0},
+  {n:'Firming gel',qty:2.0,sp:25.0,cp:12.5,sr:50.0},
+  {n:'Slimming Body Peel Off Masker',qty:8.0,sp:5.3,cp:39.7,sr:42.4}
+];
+
+// ═══════════════════════════════════════════════
+// SELL-OUT RAW BY COUNTRY/MONTH (tarifa bruta)
+// ═══════════════════════════════════════════════
+const SO_RAW = { uk: [] }; // populated dynamically on upload
+
+// UK SALES REPS — edit to match actual team (shares must sum to 1.0)
+const SP = [
+  {id:'uk1',nameEs:'Comercial UK 1',nameEn:'UK Sales Rep 1',roleEs:'Comercial senior',roleEn:'Senior Sales Rep',country:'UK',flag:'🇬🇧',share:0.50,color:'rgba(196,92,58,.9)',isGroup:false},
+  {id:'uk2',nameEs:'Comercial UK 2',nameEn:'UK Sales Rep 2',roleEs:'Comercial',roleEn:'Sales Rep',country:'UK',flag:'🇬🇧',share:0.50,color:'rgba(196,92,58,.5)',isGroup:false},
+];
+
+
+// ═══════════════════════════════════════════════
+// CONSTANTS & FILTERS
+// ═══════════════════════════════════════════════
+const EXCL=/sample|sachet|sachette|tester|back order/i;
+const EXCL_SUPP=/^TKN-00-07/i;
+const NON_PROD=/folder|brochure|trainingsboek|trainingsmap|vrachtkosten|plankplaten|behandeljas|totem(?!.*serum)|counter|wall mural|waaier|kwast|kompres|naald|spuit|spatel|handschoen/i;
+const DISC_F={tariff:1,d10:.9,d125:.875,d15:.85};
+const STORE='toskani_uk_v1';
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let S={rows:[],history:[],disc:'d125',lang:'en',drill:null,selMonths:null,view:'sell',margMonth:'all',sortKey:'mg'};
+let CH={};
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+const L=()=>TR[S.lang];
+const fmt=v=>'£'+Math.round(v).toLocaleString('en-GB');
+const fmtK=v=>'£'+(v/1000).toFixed(0)+'k';
+const mname=m=>L().MN[m-1]||'M'+m;
+const f=()=>DISC_F[S.disc];
+
+function applyLang(){document.querySelectorAll('[data-i]').forEach(el=>{const v=L()[el.getAttribute('data-i')];if(typeof v==='string')el.innerHTML=v;});}
+function showMsg(txt,type){const el=document.getElementById('msg');el.textContent=txt;el.className='msg '+type;el.style.display='block';setTimeout(()=>el.style.display='none',5000);}
+
+// ═══════════════════════════════════════════════
+// LANG & DISC
+// ═══════════════════════════════════════════════
+function setLang(lang,btn){S.lang=lang;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');applyLang();if(S.rows.length)renderCurrent();}
+function setDisc(key,btn){S.disc=key;document.querySelectorAll('.discbar .dbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');if(S.rows.length)renderCurrent();}
+function renderCurrent(){if(S.view==='sell')S.drill?renderDrill():renderOverview();else if(S.view==='margin')renderMargin();else if(S.view==='sales')renderSP();else renderClients();}
+
+// ═══════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════
+async function saveData(){try{window.storage&&await window.storage.set(STORE,JSON.stringify({rows:S.rows,history:S.history}));}catch(e){}}
+async function loadData(){try{if(window.storage){const r=await window.storage.get(STORE);if(r?.value){const d=JSON.parse(r.value);if(d.rows?.length){S.rows=d.rows;S.history=d.history||[];return true;}}}}catch(e){}return false;}
+async function saveTarifaToStorage(){try{window.storage&&await window.storage.set('uk_tarifa_v1',JSON.stringify(TARIFA_PM));}catch(e){}}
+async function loadTarifaFromStorage(){try{if(window.storage){const r=await window.storage.get('uk_tarifa_v1');if(r?.value){const d=JSON.parse(r.value);if(d&&Object.keys(d).length){TARIFA_PM=d;TARIFA_LOADED=true;return true;}}}}catch(e){}return false;}
+async function clearAll(){if(!confirm(L().confirmClear))return;S.rows=[];S.history=[];S.drill=null;S.selMonths=null;try{window.storage&&await window.storage.delete(STORE);}catch(e){}document.getElementById('clearBtn').style.display='none';document.getElementById('navtabs').style.display='none';document.getElementById('discbar').style.display='none';document.getElementById('mbar').style.display='none';document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('uploadScreen').style.display='flex';renderUploadScreen();showMsg(L().msgCleared,'ok');}
+async function clearTarifaOnly(){if(!confirm(S.lang==='en'?'Remove the saved price list? You will need to upload it again.':'¿Eliminar la tarifa guardada? Tendrás que volver a subirla.'))return;TARIFA_PM={};TARIFA_LOADED=false;try{window.storage&&await window.storage.delete('uk_tarifa_v1');}catch(e){}renderUploadScreen();}
+
+// ═══════════════════════════════════════════════
+// VIEW SWITCHING
+// ═══════════════════════════════════════════════
+function showView(view,btn){
+  S.view=view;
+  document.querySelectorAll('.navtab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const vId = view==='clients'?'viewClients':view==='sales'?'viewSales':view==='margin'?'viewMargin':'viewSell';
+  document.getElementById(vId).classList.add('active');
+  document.getElementById('mbar').style.display=(view==='sell')?'flex':'none';
+  document.getElementById('drillhdr').style.display='none';
+  if(view==='sell'){S.drill=null;renderOverview();}
+  else if(view==='margin')renderMargin();
+  else renderSP();
+}
+
+// ═══════════════════════════════════════════════
+// PARSING
+// ═══════════════════════════════════════════════
+function detectCountry(n){return'UK';} // UK dashboard: all sheets = UK
+function detectMonth(fname,raw){for(let r=0;r<Math.min(10,raw.length);r++)for(let c=0;c<raw[r].length;c++){const v=raw[r][c];if(/period|month|periode/i.test(String(v))){const mn=parseInt(raw[r+1]?.[c]);if(mn>=1&&mn<=12)return mn;}const n=parseInt(v);if(n>=1&&n<=12&&c<3)for(let cc=0;cc<raw[r].length;cc++)if(parseInt(raw[r][cc])>=2025)return n;}const ml=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];for(let i=0;i<ml.length;i++)if(fname.toLowerCase().includes(ml[i]))return i+1;return null;}
+function findCols(rows){for(let r=0;r<Math.min(20,rows.length);r++)for(let c=0;c<rows[r].length;c++){const n=parseInt(rows[r][c]);if(n>=45000000000&&n<=46000000000){let nc=-1,qc=-1,sc=-1,custc=-1;for(let cc=c+1;cc<Math.min(c+8,rows[r].length);cc++){const sv=String(rows[r][cc]||'');if(/^TKN-/i.test(sv)){sc=cc;continue;}if(typeof rows[r][cc]==='string'&&rows[r][cc].length>2&&nc<0)nc=cc;const qv=parseFloat(rows[r][cc]);if(!isNaN(qv)&&qv>0&&qv<100000&&cc>c+1){qc=cc;break;}}if(sc<0)for(let cc=0;cc<rows[r].length;cc++)if(/^TKN-/i.test(String(rows[r][cc]||''))){sc=cc;break;}
+  // Customer code: a 5-digit number starting with 1 (10000-19999), found by scanning LEFT of the article code column
+  for(let cc=Math.max(0,c-4);cc<c;cc++){const cv=parseInt(String(rows[r][cc]).replace(/\.0$/,''));if(cv>=10000&&cv<=19999){custc=cc;break;}}
+  if(nc>=0&&qc>=0)return{cc:c,nc,qc,sc,custc};}}return null;}
+function parseSheet(wb,sn,country,month,fname){const raw=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});const cols=findCols(raw);if(!cols)return[];const out=[];let lastCust='';for(const row of raw){
+  if(cols.custc>=0){const cv=String(row[cols.custc]).trim().replace(/\.0$/,'');if(/^1[0-9]{4}$/.test(cv))lastCust=cv;}
+  const code=parseInt(row[cols.cc]);if(!(code>=45000000000&&code<=46000000000))continue;const name=String(row[cols.nc]||'').trim();if(!name)continue;const qty=parseFloat(row[cols.qc]);if(isNaN(qty)||qty<=0)continue;if(EXCL.test(name))continue;const supp=cols.sc>=0?String(row[cols.sc]||'').trim():'';if(supp&&EXCL_SUPP.test(supp))continue;const price=PM[code]||null;out.push({code,name,qty,price,revenue:price?qty*price:0,country,month,fname,customer:lastCust,supp});}return out;}
+async function processFile(file){return new Promise((res,rej)=>{const reader=new FileReader();reader.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array'});const rows=[],hist=[];let month=null;for(const sn of wb.SheetNames){const country='UK'; // UK onlyconst raw=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,defval:''});if(!month)month=detectMonth(file.name,raw);const m=month||0;const r=parseSheet(wb,sn,country,m,file.name);if(r.length){rows.push(...r);hist.push({fname:file.name,month:m,country,lines:r.length,qty:r.reduce((s,x)=>s+x.qty,0),revenue:r.reduce((s,x)=>s+x.revenue,0)});}}res({rows,history:hist});}catch(err){rej(err);}};reader.onerror=rej;reader.readAsArrayBuffer(file);});}
+
+// ═══════════════════════════════════════════════
+// AGGREGATION (sell-out)
+// ═══════════════════════════════════════════════
+function agg(rows){const f2=f();const bp={},ukC={qty:0,rev:0,lines:0};for(const r of rows){if(!bp[r.code])bp[r.code]={name:r.name,qty:0,rev:0};bp[r.code].qty+=r.qty;bp[r.code].rev+=(r.price||0)*r.qty*f2;ukC.qty+=r.qty;ukC.rev+=(r.price||0)*r.qty*f2;ukC.lines++;}const prods=Object.values(bp).filter(p=>!NON_PROD.test(p.name));const activeProds=prods.filter(p=>p.qty>0).length;return{t20q:[...prods].sort((a,b)=>b.qty-a.qty).slice(0,20),t20r:[...prods].filter(p=>p.rev>0).sort((a,b)=>b.rev-a.rev).slice(0,20),bot:[...prods].filter(p=>p.rev>0).sort((a,b)=>a.qty-b.qty).slice(0,20),ukC,activeProds,nlC:ukC,beC:{qty:0,rev:0,lines:0},total:rows.reduce((s,r)=>s+(r.price||0)*r.qty*f2,0),totalQty:rows.reduce((s,r)=>s+r.qty,0),totalLines:rows.length};}
+function activeRows(){if(S.drill)return S.rows.filter(r=>r.month===S.drill);if(S.selMonths?.size)return S.rows.filter(r=>S.selMonths.has(r.month));return S.rows;}
+function allMonths(){return[...new Set(S.rows.map(r=>r.month))].sort((a,b)=>a-b);}
+
+// ═══════════════════════════════════════════════
+// MONTH BAR
+// ═══════════════════════════════════════════════
+function buildMonthBar(){const bar=document.getElementById('mbar');const pp=document.getElementById('mpills');const months=allMonths();if(!months.length){bar.style.display='none';return;}bar.style.display='flex';let h='';months.forEach(m=>{const on=!S.selMonths||S.selMonths.has(m);h+=`<button class="mpill${on?' on':''}" onclick="toggleMonth(${m})">${mname(m)}</button>`;});if(months.length>1){h+=`<span style="width:1px;height:14px;background:#ddd;display:inline-block;margin:0 4px;"></span>`;months.forEach(m=>{const on=S.drill===m;h+=`<button class="dpill${on?' on':''}" onclick="enterDrill(${m})">🔍 ${mname(m)}</button>`;});}pp.innerHTML=h;}
+function toggleMonth(m){if(S.drill)return;const months=allMonths();if(!S.selMonths)S.selMonths=new Set(months);if(S.selMonths.has(m)){if(S.selMonths.size>1)S.selMonths.delete(m);}else S.selMonths.add(m);buildMonthBar();renderOverview();}
+function enterDrill(m){S.drill=m;buildMonthBar();document.getElementById('overviewSecs').style.display='none';document.getElementById('drillSecs').style.display='block';document.getElementById('drillhdr').style.display='flex';document.getElementById('drillName').textContent=mname(m);document.getElementById('drillSub').textContent=L().drillSub(mname(m));renderDrill();}
+function exitDrill(){S.drill=null;buildMonthBar();document.getElementById('overviewSecs').style.display='block';document.getElementById('drillSecs').style.display='none';document.getElementById('drillhdr').style.display='none';renderOverview();}
+
+// ═══════════════════════════════════════════════
+// SELL-OUT RENDER HELPERS
+// ═══════════════════════════════════════════════
+function mkCH(id,cfg){if(CH[id])CH[id].destroy();const c=document.getElementById(id);if(!c)return;CH[id]=new Chart(c,cfg);}
+function setKPIs(A){const f2=f();document.getElementById('kTotal').textContent=fmt(A.total);document.getElementById('kRange').textContent=L().rangeStr(fmt(A.total/f2*.85),fmt(A.total/f2*.9));document.getElementById('kQty').textContent=Math.round(A.totalQty).toLocaleString('en-GB');document.getElementById('kLines').textContent=A.totalLines.toLocaleString('en-GB');const _tuk=document.getElementById('kTUK');if(_tuk)_tuk.textContent=A.ukC.lines>0?`£${(A.ukC.rev/A.ukC.lines).toFixed(0)}`:'—';const _ap=document.getElementById('kActiveProds');if(_ap)_ap.textContent=A.activeProds||0;}
+function fillCountry(gid,A){const el=document.getElementById(gid);if(!el)return;const tk=A.ukC.lines>0?(A.ukC.rev/A.ukC.lines).toFixed(0):'—';el.innerHTML=`<div class="card" style="padding:0;overflow:hidden;grid-column:span 2"><div class="chead uk">${L().cHeadUK||'\u{1F1EC}\u{1F1E7} United Kingdom'}</div><div style="padding:4px 12px 10px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:0"><div class="cstat" style="flex-direction:column;align-items:flex-start;padding:8px 16px 8px 0;border-right:1px solid #f0f0f0"><span class="cstat-lbl">${L().cRev}</span><span class="cstat-val" style="font-size:15px">${fmt(A.ukC.rev)}</span></div><div class="cstat" style="flex-direction:column;align-items:flex-start;padding:8px 16px;border-right:1px solid #f0f0f0"><span class="cstat-lbl">${L().cUnits}</span><span class="cstat-val" style="font-size:15px">${Math.round(A.ukC.qty).toLocaleString('en-GB')}</span></div><div class="cstat" style="flex-direction:column;align-items:flex-start;padding:8px 16px;border-right:1px solid #f0f0f0"><span class="cstat-lbl">${L().cLines}</span><span class="cstat-val" style="font-size:15px">${A.ukC.lines.toLocaleString('en-GB')}</span></div><div class="cstat" style="flex-direction:column;align-items:flex-start;padding:8px 16px;border-right:1px solid #f0f0f0"><span class="cstat-lbl">${L().cTicket}</span><span class="cstat-val" style="font-size:15px">£${tk}</span></div><div class="cstat" style="flex-direction:column;align-items:flex-start;padding:8px 0 8px 16px;border-bottom:none"><span class="cstat-lbl">Active Prods</span><span class="cstat-val" style="font-size:15px">${A.activeProds||0}</span></div></div></div>`;}
+function fillRank(id,data,vk,fmtV,fmtS,bc){const el=document.getElementById(id);if(!el)return;el.innerHTML='';const mx=data[0]?.[vk]||1;data.forEach((r,i)=>{const p=(r[vk]/mx*100).toFixed(0);el.innerHTML+=`<tr><td class="rn">${i+1}</td><td class="rname">${r.name}</td><td class="rbar"><div class="rbar-bg"><div class="rbar-fill ${bc}" style="width:${p}%"></div></div></td><td class="rval">${fmtV(r[vk])}</td><td class="rsub">${fmtS(r)}</td></tr>`;});}
+function fillBot(id,data){const el=document.getElementById(id);if(!el)return;el.innerHTML='';data.forEach((r,i)=>{const cad=/cad|tht/i.test(r.name);const b=r.qty<=1?`<span class="br br-r">${L().badgeCrit}</span>`:cad?`<span class="br br-a">${L().badgeExp}</span>`:`<span class="br br-a">${L().badgeLow}</span>`;el.innerHTML+=`<tr><td>${i+1}</td><td>${r.name}</td><td class="r">${r.qty}</td><td class="r">${r.rev>0?fmt(r.rev):'—'}</td><td>${b}</td></tr>`;});}
+function fillIns(id,A){const el=document.getElementById(id);if(!el)return;el.innerHTML='';const ins=[];if(A.t20r[0]){const t=A.t20r[0];ins.push({c:'g',l:L().secTopRev.replace('— Top 20','#1'),p:`<strong>${t.name}</strong> — <strong>${fmt(t.rev)}</strong> (${t.qty} uds.)`});}if(A.t20q[0]){const t=A.t20q[0];ins.push({c:'',l:L().secTopQty.replace('— Top 20','#1'),p:`<strong>${t.name}</strong> — <strong>${t.qty} uds.</strong>${t.rev>0?' · '+fmt(t.rev):' · no price'}`});}if(A.ukC.lines>0){const tk=(A.ukC.rev/A.ukC.lines).toFixed(0);ins.push({c:'b',l:'UK Ticket',p:`Average ticket <strong>£${tk}</strong>/line · <strong>${A.activeProds}</strong> ${S.lang==='en'?'active refs':'referencias activas'}`});}const crit=A.bot.filter(r=>r.qty<=2).length;if(crit>0)ins.push({c:'',l:S.lang==='en'?'Low Rotation':'Baja rotación',p:`<strong>${crit} products</strong> with 1–2 units sold. Check expiry dates.`});ins.slice(0,6).forEach(i=>el.innerHTML+=`<div class="ins ${i.c}"><div class="ins-lbl">${i.l}</div><p class="ins-p">${i.p}</p></div>`);}
+
+// ═══════════════════════════════════════════════
+// RENDER OVERVIEW
+// ═══════════════════════════════════════════════
+function renderOverview(){
+  const f2=f(),rows=activeRows(),A=agg(rows),months=allMonths(),sel=S.selMonths;
+  setKPIs(A);fillCountry('cGrid',A);
+  const ukS=months.map(m=>Math.round(S.rows.filter(x=>x.month===m).reduce((s,x)=>s+(x.price||0)*x.qty*f2,0)));
+  const ukQ=months.map(m=>S.rows.filter(x=>x.month===m).reduce((s,x)=>s+x.qty,0));
+  mkCH('cEvol',{type:'bar',data:{labels:months.map(mname),datasets:[{label:L().lUK||'UK (£)',data:ukS,backgroundColor:months.map(m=>(!sel||sel.has(m))?'rgba(196,92,58,.8)':'rgba(196,92,58,.15)'),borderRadius:2,order:1},{label:L().lUQty||'Units UK',data:ukQ,type:'line',borderColor:'rgba(196,92,58,1)',backgroundColor:'transparent',borderWidth:2,pointRadius:3,yAxisID:'y2',order:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{callback:fmtK,font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y2:{display:false,min:0}}}});
+
+  fillRank('tQty',A.t20q,'qty',v=>v.toLocaleString('en-GB'),r=>r.rev>0?fmt(r.rev):'—','');
+  fillRank('tRev',A.t20r,'rev',fmt,r=>`${r.qty} units`,'g');
+  mkCH('cQty',{type:'bar',data:{labels:A.t20q.slice(0,10).map(d=>d.name.length>22?d.name.slice(0,22)+'…':d.name),datasets:[{data:A.t20q.slice(0,10).map(d=>d.qty),backgroundColor:A.t20q.slice(0,10).map((_,i)=>`rgba(196,92,58,${1-i*.07})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  mkCH('cRev',{type:'bar',data:{labels:A.t20r.slice(0,10).map(d=>d.name.length>22?d.name.slice(0,22)+'…':d.name),datasets:[{data:A.t20r.slice(0,10).map(d=>d.rev),backgroundColor:A.t20r.slice(0,10).map((_,i)=>`rgba(42,125,95,${1-i*.07})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  const mg=[];months.forEach(m=>{const rr=S.rows.filter(x=>x.month===m);if(rr.length){const rev=rr.reduce((s,x)=>s+(x.price||0)*x.qty*f2,0);mg.push({month:m,rev,lines:rr.length});}});
+  mkCH('cTick',{type:'bar',data:{labels:mg.map(g=>mname(g.month).slice(0,3)),datasets:[{label:L().lTick||'Avg Ticket (£)',data:mg.map(g=>+(g.rev/g.lines).toFixed(1)),backgroundColor:mg.map(g=>(!sel||sel.has(g.month))?'rgba(196,92,58,.8)':'rgba(196,92,58,.15)'),borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`£${c.raw}`}}},scales:{y:{ticks:{callback:v=>'£'+v,font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{font:{size:10}}}}}});
+
+  fillBot('tBot',A.bot);fillIns('insBox',A);applyLang();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER DRILL
+// ═══════════════════════════════════════════════
+function renderDrill(){
+  const m=S.drill,f2=f(),rows=S.rows.filter(r=>r.month===m),A=agg(rows);
+  setKPIs(A);fillCountry('dCGrid',A);
+  const months=allMonths(),prevM=months[months.indexOf(m)-1]||null;
+  const cmpSec=document.getElementById('cmpSec');
+  if(prevM){
+    cmpSec.style.display='block';
+    document.getElementById('cmpTitle').textContent=L().cmpHdr(mname(m),mname(prevM));
+    const prevMap={};S.rows.filter(r=>r.month===prevM).forEach(r=>{if(!prevMap[r.code])prevMap[r.code]={name:r.name,qty:0,rev:0};prevMap[r.code].qty+=r.qty;prevMap[r.code].rev+=(r.price||0)*r.qty*f2;});
+    const currMap={};rows.forEach(r=>{if(!currMap[r.code])currMap[r.code]={name:r.name,qty:0,rev:0};currMap[r.code].qty+=r.qty;currMap[r.code].rev+=(r.price||0)*r.qty*f2;});
+    const cmp=[];new Set([...Object.keys(currMap),...Object.keys(prevMap)]).forEach(code=>{const cur=currMap[code];if(!cur||NON_PROD.test(cur.name||''))return;const prv=prevMap[code];cmp.push({name:cur.name,qty:cur.qty,rev:cur.rev,diffQty:prv?cur.qty-prv.qty:null,isNew:!prv});});
+    cmp.sort((a,b)=>b.rev-a.rev);
+    const cb=document.getElementById('cmpBody');cb.innerHTML='';
+    cmp.slice(0,20).forEach(r=>{const vs=r.isNew?`<span class="veq">${L().vsNew}</span>`:r.diffQty>0?`<span class="vup">+${r.diffQty}</span>`:r.diffQty<0?`<span class="vdn">${r.diffQty}</span>`:`<span class="veq">=</span>`;cb.innerHTML+=`<tr><td>${r.name}</td><td class="r">${r.qty}</td><td class="r">${fmt(r.rev)}</td><td class="r">${vs}</td></tr>`;});
+  }else cmpSec.style.display='none';
+  fillRank('dTQty',A.t20q,'qty',v=>v.toLocaleString('en-GB'),r=>r.rev>0?fmt(r.rev):'—','');
+  fillRank('dTRev',A.t20r,'rev',fmt,r=>`${r.qty} units`,'g');
+  mkCH('dCQty',{type:'bar',data:{labels:A.t20q.slice(0,10).map(d=>d.name.length>22?d.name.slice(0,22)+'…':d.name),datasets:[{data:A.t20q.slice(0,10).map(d=>d.qty),backgroundColor:A.t20q.slice(0,10).map((_,i)=>`rgba(196,92,58,${1-i*.07})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  mkCH('dCRev',{type:'bar',data:{labels:A.t20r.slice(0,10).map(d=>d.name.length>22?d.name.slice(0,22)+'…':d.name),datasets:[{data:A.t20r.slice(0,10).map(d=>d.rev),backgroundColor:A.t20r.slice(0,10).map((_,i)=>`rgba(42,125,95,${1-i*.07})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  fillBot('dBot',A.bot);fillIns('dIns',A);applyLang();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER MARGINS
+// ═══════════════════════════════════════════════
+function setMargMonth(m,btn){S.margMonth=m;document.querySelectorAll('#margMonthBar .mpill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderMargin();}
+function setSortKey(k,btn){S.sortKey=k;document.querySelectorAll('#viewMargin .dbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderMargProds();}
+
+function getMargData(){
+  const f2=f();
+  return MARGIN_MONTHLY.map(r=>({...r,rev_d:r.sell_rev*f2,margin_d:r.sell_rev*f2-r.cost,pct_d:(r.sell_rev*f2-r.cost)/(r.sell_rev*f2)*100}));
+}
+function getFilteredMarg(){
+  const data=getMargData();
+  if(S.margMonth==='all'){const tot=data.reduce((a,r)=>({rev_d:a.rev_d+r.rev_d,cost:a.cost+r.cost,margin_d:a.margin_d+r.margin_d,qty:a.qty+r.qty}),{rev_d:0,cost:0,margin_d:0,qty:0});tot.pct_d=tot.margin_d/tot.rev_d*100;return{overall:tot,monthly:data};}
+  const r=data.find(r=>r.m===S.margMonth);return{overall:{...r},monthly:data};
+}
+
+function renderMargin(){
+  if (!MARGIN_MONTHLY.length) {
+    document.querySelector('#viewMargin').innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;text-align:center;color:#777;gap:10px;">
+        <div style="font-size:14px;font-weight:bold;color:#1a1a2e;">No hay datos de margen disponibles</div>
+        <div style="font-size:12px;max-width:420px;">El cálculo de margen necesita el coste de compra (sell-in) además del precio de venta (tarifa). Actualmente solo tienes la tarifa cargada — sube también el Excel de sell-in para activar esta pestaña.</div>
+      </div>`;
+    return;
+  }
+  // Rebuild dynamic month pills
+  {const bar=document.getElementById('margMonthBar');
+  if(bar&&MARGIN_MONTHLY.length){
+    bar.innerHTML=`<span style="font-size:11px;color:#777;" data-i="mbarLbl2">${L().mbarLbl2||'Filter month:'}</span>`
+      +`<button class="mpill${S.margMonth==='all'?' on':''}" onclick="setMargMonth('all',this)">${L().allMonths||'All'}</button>`
+      +MARGIN_MONTHLY.map(r=>`<button class="mpill${S.margMonth===r.m?' on':''}" onclick="setMargMonth('${r.m}',this)">${r.m.slice(0,3)}</button>`).join('');
+  }}
+  const{overall,monthly}=getFilteredMarg();
+  document.getElementById('mRev').textContent=fmt(overall.rev_d);
+  document.getElementById('mCost').textContent=fmt(overall.cost);
+  document.getElementById('mMargin').textContent=fmt(overall.margin_d);
+  document.getElementById('mMarginSub').textContent=S.margMonth==='all'?'All months':S.margMonth;
+  const _refs=document.getElementById('mRefsVal');if(_refs)_refs.textContent=MARGIN_PRODS.length||'—';
+  const _rsub=document.getElementById('mRefsSub');if(_rsub)_rsub.textContent=`of total sell-out`;
+  document.getElementById('mPct').textContent=overall.pct_d.toFixed(1)+'%';
+
+  // Evolution chart
+  const sel=S.margMonth;
+  mkCH('mEvol',{type:'bar',data:{labels:monthly.map(r=>r.m),datasets:[
+    {label:L().mRevenue,data:monthly.map(r=>Math.round(r.rev_d)),backgroundColor:monthly.map(r=>(sel==='all'||r.m===sel)?'rgba(44,95,138,.75)':'rgba(44,95,138,.15)'),borderRadius:2,order:1},
+    {label:L().mCost,data:monthly.map(r=>Math.round(r.cost)),backgroundColor:monthly.map(r=>(sel==='all'||r.m===sel)?'rgba(196,92,58,.7)':'rgba(196,92,58,.15)'),borderRadius:2,order:1},
+    {label:L().mMargin,data:monthly.map(r=>Math.round(r.margin_d)),backgroundColor:monthly.map(r=>(sel==='all'||r.m===sel)?'rgba(42,125,95,.8)':'rgba(42,125,95,.15)'),borderRadius:2,order:1},
+    {label:'Margen %',data:monthly.map(r=>+r.pct_d.toFixed(1)),type:'line',borderColor:'rgba(184,146,58,1)',backgroundColor:'transparent',borderWidth:2,pointRadius:4,yAxisID:'y2',order:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{callback:fmtK,font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y2:{position:'right',min:0,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{display:false}}}}});
+
+  // Monthly table
+  const tb=document.getElementById('mMonthlyBody');tb.innerHTML='';
+  let tRev=0,tCost=0,tMg=0,tQty=0;
+  monthly.forEach(r=>{
+    const active=sel==='all'||r.m===sel;
+    const c=r.pct_d>=50?'#2a7d5f':r.pct_d>=40?'#b8923a':'#c0392b';
+    tb.innerHTML+=`<tr style="opacity:${active?1:.3}"><td class="b">${r.m}</td><td class="r">${fmt(r.rev_d)}</td><td class="r">${fmt(r.cost)}</td><td class="r" style="color:#2a7d5f;font-weight:bold">${fmt(r.margin_d)}</td><td class="r" style="color:${c};font-weight:bold">${r.pct_d.toFixed(1)}%</td><td class="r">${r.qty.toLocaleString('en-GB')}</td></tr>`;
+    if(active){tRev+=r.rev_d;tCost+=r.cost;tMg+=r.margin_d;tQty+=r.qty;}
+  });
+  if(sel==='all')tb.innerHTML+=`<tr style="font-weight:bold;border-top:2px solid #e0e0e0"><td>TOTAL</td><td class="r">${fmt(tRev)}</td><td class="r">${fmt(tCost)}</td><td class="r" style="color:#2a7d5f">${fmt(tMg)}</td><td class="r" style="color:#2a7d5f">${(tMg/tRev*100).toFixed(1)}%</td><td class="r">${tQty.toLocaleString('en-GB')}</td></tr>`;
+
+  renderMargProds();
+  applyLang();
+}
+
+function renderMargProds(){
+  const f2=f();
+  const prods=MARGIN_PRODS.map(p=>({...p,sr_d:p.sr*f2,mg_d:p.sr*f2-p.cp*p.qty,mp_d:(p.sr*f2-p.cp*p.qty)/(p.sr*f2)*100})).filter(p=>p.sr>0);
+  const sorted=[...prods].sort((a,b)=>S.sortKey==='mg'?b.mg_d-a.mg_d:S.sortKey==='mp'?b.mp_d-a.mp_d:b.sr_d-a.sr_d);
+  const maxMg=Math.max(...sorted.map(p=>Math.abs(p.mg_d)));
+  const tb=document.getElementById('mProdBody');tb.innerHTML='';
+  sorted.forEach((p,i)=>{
+    const c=p.mp_d>=50?'#2a7d5f':p.mp_d>=40?'#b8923a':'#c0392b';
+    const bw=(Math.abs(p.mg_d)/maxMg*100).toFixed(0);
+    const bc=p.mg_d>=0?'#2a7d5f':'#c0392b';
+    const badge=p.mp_d<0?`<span class="br br-r">⚠</span>`:p.mp_d<40?`<span class="br br-a">↓</span>`:'';
+    tb.innerHTML+=`<tr><td class="r" style="color:#bbb;font-size:10px">${i+1}</td><td>${p.n} ${badge}</td><td class="r">£${p.sp.toFixed(2)}</td><td class="r">£${p.cp.toFixed(2)}</td><td class="r">${p.qty}</td><td class="r" style="color:${c};font-weight:bold">${p.mp_d.toFixed(1)}%</td><td><div style="height:3px;background:#f0ede8;border-radius:2px;overflow:hidden;margin:0 4px"><div style="height:100%;width:${bw}%;background:${bc};border-radius:2px"></div></div></td><td class="r" style="color:${p.mg_d>=0?'#2a7d5f':'#c0392b'};font-weight:bold">${fmt(p.mg_d)}</td></tr>`;
+  });
+  // Top 15 by margin £
+  const top15=sorted.filter(p=>p.mg_d>0).slice(0,15);
+  mkCH('mProdChart',{type:'bar',data:{labels:top15.map(p=>p.n.length>22?p.n.slice(0,22)+'…':p.n),datasets:[{data:top15.map(p=>Math.round(p.mg_d)),backgroundColor:top15.map((_,i)=>`rgba(42,125,95,${1-i*.05})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  // Top 15 by %
+  const top15p=[...prods].filter(p=>p.mg_d>0).sort((a,b)=>b.mp_d-a.mp_d).slice(0,15);
+  mkCH('mPctChart',{type:'bar',data:{labels:top15p.map(p=>p.n.length>22?p.n.slice(0,22)+'…':p.n),datasets:[{data:top15p.map(p=>+p.mp_d.toFixed(1)),backgroundColor:top15p.map((_,i)=>`rgba(44,95,138,${1-i*.05})`),borderRadius:2}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.raw.toFixed(1)}%`}}},scales:{x:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},y:{ticks:{font:{size:10}}}}}});
+  // Low margin
+  const low=[...prods].sort((a,b)=>a.mp_d-b.mp_d).slice(0,10);
+  const lb=document.getElementById('mLowBody');lb.innerHTML='';
+  low.forEach((p,i)=>{const badge=p.mp_d<0?`<span class="br br-r">Negativo</span>`:p.mp_d<40?`<span class="br br-a">Bajo</span>`:`<span class="br br-a">Revisar</span>`;lb.innerHTML+=`<tr><td>${i+1}</td><td>${p.n}</td><td class="r">£${p.sp}</td><td class="r">£${p.cp}</td><td class="r" style="color:${p.mp_d<0?'#c0392b':'#b8923a'};font-weight:bold">${p.mp_d.toFixed(1)}%</td><td>${badge}</td></tr>`;});
+}
+
+// ═══════════════════════════════════════════════
+// RENDER SALESPEOPLE
+// ═══════════════════════════════════════════════
+function renderSP(){
+  const f2=f(),isEN=S.lang==='en';
+  if(!SO_RAW.uk||!SO_RAW.uk.length){
+    ['spKNL1','spKNLT','spKBE1','spKBE2'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.textContent='—';
+    });
+    const mb=document.getElementById('spMonthBody');
+    if(mb)mb.innerHTML='<tr><td colspan="20" style="padding:12px;color:#777;font-size:12px;">No data loaded yet.</td></tr>';
+    return;
+  }
+  const months=SO_RAW.uk.map(r=>r.m);
+  const ukTotal=SO_RAW.uk.reduce((s,r)=>s+r.rev*f2,0);
+  const spData=SP.map(sp=>{
+    const monthly=SO_RAW.uk.map(r=>({m:r.m,mn:r.mn,qty:Math.round(r.qty*sp.share),rev:r.rev*sp.share*f2}));
+    return{...sp,name:isEN?sp.nameEn:sp.nameEs,role:isEN?sp.roleEn:sp.roleEs,monthly,totalRev:monthly.reduce((s,r)=>s+r.rev,0)};
+  });
+  // Map SP reps to existing KPI element IDs
+  const kpiIds=['spKNL1','spKNLT','spKBE1','spKBE2'];
+  kpiIds.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el)el.textContent=spData[i]?fmt(spData[i].totalRev):'—';
+  });
+  const spKNL2=document.getElementById('spKNL2');if(spKNL2)spKNL2.textContent='';
+  const spKNL3=document.getElementById('spKNL3');if(spKNL3)spKNL3.textContent='';
+  // Monthly table
+  const ths='font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.05em;padding:0 0 7px 8px;border-bottom:1px solid #e0e0e0;';
+  const mhdr=document.getElementById('spMonthHdr');
+  if(mhdr)mhdr.innerHTML=`<th style="${ths}text-align:left;padding-left:0">${isEN?'Sales Rep':'Vendedor/a'}</th>`
+    +months.map(m=>`<th style="${ths}text-align:right">${m.slice(0,3)}</th>`).join('')
+    +`<th style="${ths}text-align:right">Total</th>`;
+  const mb=document.getElementById('spMonthBody');if(!mb)return;
+  mb.innerHTML='';
+  const tds='padding:5px 0 5px 8px;font-size:11px;text-align:right;border-bottom:1px solid #f5f5f5;';
+  const tdf='padding:5px 8px 5px 0;font-size:12px;border-bottom:1px solid #f5f5f5;';
+  const mSums=months.map((_,mi)=>SO_RAW.uk[mi].rev*f2);
+  mb.innerHTML+=`<tr style="background:#f7f5f0"><td style="${tdf}font-weight:bold">🇬🇧 United Kingdom</td>`
+    +mSums.map(v=>`<td style="${tds}font-weight:bold">${fmt(v)}</td>`).join('')
+    +`<td style="${tds}font-weight:bold;color:#2a7d5f">${fmt(ukTotal)}</td></tr>`;
+  spData.forEach(sp=>{
+    mb.innerHTML+=`<tr><td style="${tdf}padding-left:14px;font-size:11.5px">`
+      +`${sp.flag} ${sp.name} <span style="color:#bbb;font-size:10px">(${(sp.share*100).toFixed(0)}%)</span></td>`
+      +sp.monthly.map(r=>`<td style="${tds}color:#555">${fmt(r.rev)}</td>`).join('')
+      +`<td style="${tds}color:#2a7d5f;font-weight:bold">${fmt(sp.totalRev)}</td></tr>`;
+  });
+  mb.innerHTML+=`<tr style="font-weight:bold;border-top:2px solid #e0e0e0"><td style="${tdf}font-weight:bold">TOTAL</td>`
+    +mSums.map(v=>`<td style="${tds}font-weight:bold">${fmt(v)}</td>`).join('')
+    +`<td style="${tds}font-weight:bold;color:#2a7d5f">${fmt(ukTotal)}</td></tr>`;
+  applyLang();
+}
+
+// ═══════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════
+async function handleFiles(files){
+  if(!files.length)return;
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('loadingScreen').style.display='flex';
+  let added=0,warns=[];
+  for(const file of files){try{const{rows,history}=await processFile(file);if(!rows.length){warns.push(`${file.name}: no data`);continue;}const keys=new Set(history.map(h=>`${h.month}_${h.country}`));S.rows=S.rows.filter(r=>!keys.has(`${r.month}_${r.country}`));S.history=S.history.filter(h=>!keys.has(`${h.month}_${h.country}`));S.rows.push(...rows);S.history.push(...history);added+=rows.length;}catch(e){warns.push(`${file.name}: ${e.message}`);}}
+  document.getElementById('loadingScreen').style.display='none';
+  if(!S.rows.length){document.getElementById('uploadScreen').style.display='flex';showMsg(L().msgNoData,'err');return;}
+  S.selMonths=null;
+  await saveData();
+  showDashboard();
+  const mc=[...new Set(S.history.map(h=>h.month))].length;
+  if(warns.length)showMsg(warns.join(' | '),'warn');
+  else showMsg(L().msgAdded(added,S.rows.length,mc),'ok');
+}
+
+function showDashboard(){
+  document.getElementById('uploadScreen').style.display='none';
+  document.getElementById('clearBtn').style.display='block';
+  document.getElementById('addMonthBtn').style.display='block';
+  document.getElementById('navtabs').style.display='flex';
+  document.getElementById('discbar').style.display='flex';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('viewSell').classList.add('active');
+  document.querySelectorAll('.navtab').forEach(b=>b.classList.remove('on'));
+  document.querySelector('.navtab').classList.add('on');
+  S.view='sell';S.drill=null;
+  buildMonthBar();
+  renderOverview();
+}
+
+function backToUploadScreen(){
+  document.getElementById('navtabs').style.display='none';
+  document.getElementById('discbar').style.display='none';
+  document.getElementById('mbar').style.display='none';
+  document.getElementById('drillhdr').style.display='none';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('uploadScreen').style.display='flex';
+  renderUploadScreen();
+}
+
+// ═══════════════════════════════════════════════
+// TARIFA (PRICE LIST) PARSER
+// ═══════════════════════════════════════════════
+let TARIFA_PM = {};   // dynamic price map built from uploaded tarifa file
+let TARIFA_LOADED = false;
+let PENDING_SELLOUT_FILES = [];  // raw File objects queued for this upload
+
+function findTarifaCols(rows){
+  for (let r = 0; r < Math.min(20, rows.length); r++) {
+    for (let c = 0; c < rows[r].length; c++) {
+      const n = parseInt(String(rows[r][c]).replace(/[.,\s]/g,''));
+      if (n >= 45000000000 && n <= 46000000000) {
+        let priceCol = -1;
+        for (let cc = 0; cc < rows[r].length; cc++) {
+          if (cc === c) continue;
+          const v = String(rows[r][cc]).replace(',', '.').trim();
+          const pv = parseFloat(v);
+          if (!isNaN(pv) && pv > 0 && pv < 5000 && /^\d+([.,]\d+)?$/.test(v)) {
+            priceCol = cc; break;
+          }
+        }
+        if (priceCol >= 0) return { codeCol: c, priceCol, dataStart: r };
+      }
+    }
+  }
+  return null;
+}
+
+async function processTarifaFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'array' });
+        let found = {};
+        for (const sn of wb.SheetNames) {
+          const raw = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header:1, defval:'' });
+          const cols = findTarifaCols(raw);
+          if (!cols) continue;
+          for (let r = cols.dataStart; r < raw.length; r++) {
+            const row = raw[r];
+            const code = parseInt(String(row[cols.codeCol]).replace(/[.,\s]/g,''));
+            if (!(code >= 45000000000 && code <= 46000000000)) continue;
+            const priceStr = String(row[cols.priceCol]).replace(',', '.').trim();
+            const price = parseFloat(priceStr);
+            if (!isNaN(price) && price > 0) found[code] = price;
+          }
+        }
+        resolve(found);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// UPLOAD SCREEN — DYNAMIC RENDER
+// Two states:
+//  A) No tarifa saved yet → ask for tarifa first
+//  B) Tarifa saved → show monthly sell-out upload + list of loaded months
+// ═══════════════════════════════════════════════
+function getLoadedMonthsList(){
+  const mn_en = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'};
+  const seen = {};
+  (S.history||[]).forEach(h => {
+    const key = h.month+'_'+h.country;
+    if(!seen[key]) seen[key] = {month:h.month, country:h.country, lines:0, qty:0, revenue:0, fname:h.fname};
+    seen[key].lines += h.lines; seen[key].qty += h.qty; seen[key].revenue += h.revenue;
+  });
+  const byMonth = {};
+  Object.values(seen).forEach(h => {
+    if(!byMonth[h.month]) byMonth[h.month] = {month:h.month, name: mn_es[h.month]||('Mes '+h.month), nl:false, be:false, qty:0, rev:0};
+    byMonth[h.month].qty += h.qty; byMonth[h.month].rev += h.revenue;
+    byMonth[h.month].uk = true;
+  });
+  return Object.values(byMonth).sort((a,b)=>a.month-b.month);
+}
+
+function renderUploadScreen(){
+  const el = document.getElementById('uploadScreenContent');
+  if (!el) return;
+
+  if (!TARIFA_LOADED) {
+    // STATE A: ask for tarifa
+    el.innerHTML = `
+      <div class="dropzone" style="max-width:480px;margin:0 auto;">
+        <h3>1. Upload the UK Price List</h3>
+        <p>Excel with article code and sale price.<br>You only need to upload it once — it will be saved.</p>
+        <div id="tarifaStatus" style="font-size:11px;color:#2a7d5f;margin-bottom:8px;min-height:16px;"></div>
+        <button class="btn primary" onclick="document.getElementById('fileInputTarifa').click()">↑ Select price list Excel</button>
+        <input type="file" id="fileInputTarifa" accept=".xlsx,.xls" style="display:none">
+      </div>`;
+    document.getElementById('fileInputTarifa').addEventListener('change', onTarifaFileSelected);
+    return;
+  }
+
+  // STATE B: tarifa already saved — show monthly upload + loaded months list
+  const loaded = getLoadedMonthsList();
+  const loadedHtml = loaded.length ? `
+    <div style="margin-top:18px;max-width:480px;margin-left:auto;margin-right:auto;">
+      <div style="font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Months loaded</div>
+      <div style="border:1px solid #e8e8e8;border-radius:6px;overflow:hidden;background:#fff;">
+        ${loaded.map(m => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid #f0f0f0;font-size:12px;">
+            <span><strong>${m.name}</strong> 🇬🇧</span>
+            <span style="color:#777;">${m.qty.toLocaleString('en-GB')} units · £${Math.round(m.rev).toLocaleString('en-GB')}</span>
+          </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  const sellinHtml = `
+    <div style="margin-top:18px;max-width:480px;margin-left:auto;margin-right:auto;">
+      <div class="dropzone" style="padding:18px;">
+        <h3 style="font-size:13px;">3. Sell-In (purchase cost) — optional</h3>
+        <p style="font-size:11px;">Activates the Margins tab. Upload once, saved automatically.</p>
+        <div id="sellinStatus" style="font-size:11px;color:${SELLIN_LOADED?'#2a7d5f':'#999'};margin-bottom:8px;min-height:16px;">${SELLIN_LOADED ? '✓ Sell-in cargado (' + Object.keys(SELLIN_COST_MAP).length + ' referencias)' : 'Not yet uploaded'}</div>
+        <button class="btn" style="color:#1a1a2e;border-color:#ccc;background:#fff;" onclick="document.getElementById('fileInputSellin').click()">↑ ${SELLIN_LOADED ? 'Replace' : 'Select'} fichero de sell-in</button>
+        <input type="file" id="fileInputSellin" accept=".xlsx,.xls,.csv" style="display:none">
+        ${SELLIN_LOADED ? `<div style="margin-top:8px;"><button class="btn" style="font-size:10px;padding:4px 10px;color:#999;border-color:#ddd;background:#fff;" onclick="clearSellinOnly()">Remove saved sell-in data</button></div>` : ''}
+      </div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="dropzone" style="max-width:480px;margin:0 auto;">
+      <h3>${loaded.length ? 'Add a new month' : 'Upload first month of Sell-Out'}</h3>
+      <p>Products sold by units for a month.<br>You can upload multiple files at once.</p>
+      <div id="selloutStatus" style="font-size:11px;color:#2a7d5f;margin-bottom:8px;min-height:16px;"></div>
+      <button class="btn primary" onclick="document.getElementById('fileInputSellout').click()">↑ Select Excel file(s)</button>
+      <input type="file" id="fileInputSellout" accept=".xlsx,.xls" multiple style="display:none">
+      <div style="margin-top:14px;">
+        <button class="btn" style="font-size:10px;padding:4px 10px;color:#999;border-color:#ddd;" onclick="clearTarifaOnly()">Change price list</button>
+      </div>
+    </div>
+    ${loadedHtml}
+    ${sellinHtml}
+    ${loaded.length ? `<div style="text-align:center;margin-top:16px;"><button class="btn primary" onclick="goToDashboard()" style="padding:10px 24px;font-size:13px;">View Dashboard</button></div>` : ''}
+  `;
+  document.getElementById('fileInputSellout').addEventListener('change', onSelloutFilesSelected);
+  document.getElementById('fileInputSellin').addEventListener('change', onSellinFileSelected);
+}
+
+async function onTarifaFileSelected(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('tarifaStatus');
+  statusEl.textContent = 'Processing…';
+  statusEl.style.color = '#777';
+  try {
+    const prices = await processTarifaFile(file);
+    const n = Object.keys(prices).length;
+    if (n === 0) {
+      statusEl.textContent = '⚠ No prices found in this file';
+      statusEl.style.color = '#c0392b';
+      return;
+    }
+    TARIFA_PM = prices;
+    TARIFA_LOADED = true;
+    Object.keys(PM).forEach(k => delete PM[k]);
+    Object.assign(PM, TARIFA_PM);
+    await saveTarifaToStorage();
+    showMsg(`✓ Price list saved: ${n} prices`, 'ok');
+    renderUploadScreen();
+  } catch(err) {
+    statusEl.textContent = '⚠ Error reading file: ' + err.message;
+    statusEl.style.color = '#c0392b';
+  }
+}
+
+async function onSellinFileSelected(e){
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('sellinStatus');
+  statusEl.textContent = 'Processing…';
+  statusEl.style.color = '#777';
+  try {
+    const { costMap, costMapByMonth } = await processSellinFile(file);
+    const n = Object.keys(costMap).length;
+    if (n === 0) {
+      statusEl.textContent = '⚠ No costs found in this file';
+      statusEl.style.color = '#c0392b';
+      return;
+    }
+    SELLIN_COST_MAP = costMap;
+    SELLIN_COST_MAP_BY_MONTH = costMapByMonth;
+    SELLIN_LOADED = true;
+    await saveSellinToStorage();
+    if (S.rows && S.rows.length) buildMarginDataFromRows();
+    showMsg(`✓ Sell-in saved: ${n} cost references`, 'ok');
+    renderUploadScreen();
+  } catch(err) {
+    statusEl.textContent = '⚠ Error reading file: ' + err.message;
+    statusEl.style.color = '#c0392b';
+  }
+}
+
+async function onSelloutFilesSelected(e){
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+
+  let added = 0, warns = [];
+  for (const file of files) {
+    try {
+      const { rows, history } = await processFile(file);
+      if (!rows.length) { warns.push(`${file.name}: no recognisable data`); continue; }
+      // Replace any existing data for the same month+country (re-upload overwrites)
+      const keys = new Set(history.map(h => `${h.month}_${h.country}`));
+      S.rows = S.rows.filter(r => !keys.has(`${r.month}_${r.country}`));
+      S.history = S.history.filter(h => !keys.has(`${h.month}_${h.country}`));
+      S.rows.push(...rows);
+      S.history.push(...history);
+      added += rows.length;
+    } catch(err) { warns.push(`${file.name}: ${err.message}`); }
+  }
+
+  document.getElementById('loadingScreen').style.display = 'none';
+
+  if (!added) {
+    document.getElementById('uploadScreen').style.display = 'flex';
+    renderUploadScreen();
+    showMsg(warns.length ? warns.join(' | ') : L().msgNoData, 'err');
+    return;
+  }
+
+  buildCliDataFromRows();
+  buildMarginDataFromRows();
+  buildSalespersonDataFromRows();
+  await saveData();
+
+  const mc = [...new Set(S.history.map(h => h.month))].length;
+  document.getElementById('uploadScreen').style.display = 'flex';
+  renderUploadScreen();
+  if (warns.length) showMsg(warns.join(' | '), 'warn');
+  else showMsg(`✓ ${added} lines added · ${mc} month(s) loaded`,'ok');
+}
+
+function goToDashboard(){
+  S.selMonths = null;
+  showDashboard();
+}
+
+// ═══════════════════════════════════════════════
+// DERIVE MARGIN & SALESPERSON DATA FROM ROWS
+// ═══════════════════════════════════════════════
+let SELLIN_COST_MAP = {};         // supp_code (TKN-00-XXXX) -> avg cost per unit (all-time fallback)
+let SELLIN_COST_MAP_BY_MONTH = {}; // supp_code -> {month: avgCost}  (current calendar year only)
+let SELLIN_LOADED = false;
+
+function getCostForRow(r){
+  // Prefer the cost from the same calendar month if we have it, otherwise fall back to the all-time average
+  const byMonth = SELLIN_COST_MAP_BY_MONTH[r.supp];
+  if (byMonth && byMonth[r.month] !== undefined) return byMonth[r.month];
+  return SELLIN_COST_MAP[r.supp];
+}
+
+function buildMarginDataFromRows(){
+  MARGIN_MONTHLY.length = 0;
+  MARGIN_PRODS.length = 0;
+  if (!SELLIN_LOADED || !Object.keys(SELLIN_COST_MAP).length) return;
+
+  const mn_en = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'};
+  const months = [...new Set(S.rows.map(r=>r.month))].sort((a,b)=>a-b);
+
+  // Only rows that have BOTH a tariff price AND a known sell-in cost (matched via supp_code)
+  const withCost = S.rows.filter(r => r.price && r.supp && getCostForRow(r) !== undefined);
+
+  // Monthly aggregation
+  months.forEach(m => {
+    const rows = withCost.filter(r => r.month === m);
+    if (!rows.length) return;
+    const sell = rows.reduce((s,r) => s + r.price*r.qty, 0);
+    const cost = rows.reduce((s,r) => s + getCostForRow(r)*r.qty, 0);
+    const margin = sell - cost;
+    const qty = rows.reduce((s,r) => s + r.qty, 0);
+    MARGIN_MONTHLY.push({m: mn_en[m]||('M'+m), mn:m, sell_rev: Math.round(sell*100)/100, cost: Math.round(cost*100)/100, margin: Math.round(margin*100)/100, qty});
+  });
+
+  // Per-product aggregation
+  const prodMap = {};
+  withCost.forEach(r => {
+    if (!prodMap[r.code]) prodMap[r.code] = {n: r.name, qty:0, sr:0, costTot:0};
+    prodMap[r.code].qty += r.qty;
+    prodMap[r.code].sr += r.price*r.qty;
+    prodMap[r.code].costTot += getCostForRow(r)*r.qty;
+  });
+  Object.values(prodMap).forEach(p => {
+    MARGIN_PRODS.push({
+      n: p.n, qty: p.qty,
+      sp: Math.round((p.sr/p.qty)*100)/100,
+      cp: Math.round((p.costTot/p.qty)*100)/100,
+      sr: Math.round(p.sr*100)/100
+    });
+  });
+}
+
+// ── SELL-IN PARSER ──────────────────────────────
+async function processSellinFile(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        let text;
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          text = e.target.result;
+        } else {
+          const wb = XLSX.read(e.target.result, { type:'array' });
+          const sn = wb.SheetNames[0];
+          text = XLSX.utils.sheet_to_csv(wb.Sheets[sn], {FS:';'});
+        }
+        const sep = text.split('\n')[0].includes(';') ? ';' : ',';
+        const rows = text.split('\n').filter(l=>l.trim()).map(l => l.split(sep));
+        const header = rows[0].map(h => h.trim().replace(/^"|"$/g,''));
+        const codeCol = header.findIndex(h => /xarticulo_id|supp.?code|c.?digo.?art/i.test(h));
+        const importeCol = header.findIndex(h => /^importe$/i.test(h));
+        const cantidadCol = header.findIndex(h => /^cantidad$/i.test(h));
+        const fechaCol = header.findIndex(h => /^fecha$/i.test(h));
+        const anoCol = header.findIndex(h => /^a.?o$/i.test(h));
+        const mesCol = header.findIndex(h => /^mes$/i.test(h));
+        if (codeCol < 0 || importeCol < 0 || cantidadCol < 0) {
+          throw new Error('Cannot find columns: xarticulo_id / Importe / Cantidad');
+        }
+
+        const monthNames = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+
+        const totals = {};        // code -> {imp,qty}  (overall, fallback)
+        const totalsByMonth = {}; // "code_month" -> {imp,qty}  (current calendar year only)
+        const now = new Date();
+        const curYear = now.getFullYear();
+
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const code = (row[codeCol]||'').trim().replace(/^"|"$/g,'');
+          if (!code) continue;
+          const importe = parseFloat((row[importeCol]||'0').replace(',','.'));
+          const cantidad = parseFloat((row[cantidadCol]||'0').replace(',','.'));
+          if (isNaN(importe) || isNaN(cantidad) || cantidad <= 0) continue;
+
+          if (!totals[code]) totals[code] = {imp:0, qty:0};
+          totals[code].imp += importe;
+          totals[code].qty += cantidad;
+
+          // Determine year/month for this row
+          let year = null, month = null;
+          if (anoCol >= 0 && mesCol >= 0) {
+            year = parseInt(row[anoCol]);
+            const mesStr = (row[mesCol]||'').trim().toLowerCase();
+            month = monthNames[mesStr] || null;
+          } else if (fechaCol >= 0) {
+            const d = new Date(row[fechaCol]);
+            if (!isNaN(d)) { year = d.getFullYear(); month = d.getMonth()+1; }
+          }
+
+          if (year === curYear && month) {
+            const key = code + '_' + month;
+            if (!totalsByMonth[key]) totalsByMonth[key] = {imp:0, qty:0};
+            totalsByMonth[key].imp += importe;
+            totalsByMonth[key].qty += cantidad;
+          }
+        }
+
+        // Overall fallback cost map (all-time average per code)
+        const costMap = {};
+        Object.keys(totals).forEach(code => {
+          if (totals[code].qty > 0) costMap[code] = totals[code].imp / totals[code].qty;
+        });
+
+        // Month-specific cost map for current year: {code: {month: avgCost}}
+        const costMapByMonth = {};
+        Object.keys(totalsByMonth).forEach(key => {
+          const lastUnderscore = key.lastIndexOf('_');
+          const code = key.substring(0, lastUnderscore);
+          const month = parseInt(key.substring(lastUnderscore+1));
+          const src = totalsByMonth[key];
+          if (src.qty > 0) {
+            if (!costMapByMonth[code]) costMapByMonth[code] = {};
+            costMapByMonth[code][month] = src.imp / src.qty;
+          }
+        });
+
+        resolve({costMap, costMapByMonth});
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    if (file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file);
+    else reader.readAsArrayBuffer(file);
+  });
+}
+
+async function saveSellinToStorage(){try{window.storage&&await window.storage.set('uk_sellin_v1',JSON.stringify({costMap:SELLIN_COST_MAP,costMapByMonth:SELLIN_COST_MAP_BY_MONTH}));}catch(e){}}
+async function loadSellinFromStorage(){try{if(window.storage){const r=await window.storage.get('uk_sellin_v1');if(r?.value){const d=JSON.parse(r.value);if(d&&d.costMap&&Object.keys(d.costMap).length){SELLIN_COST_MAP=d.costMap;SELLIN_COST_MAP_BY_MONTH=d.costMapByMonth||{};SELLIN_LOADED=true;return true;}}}}catch(e){}return false;}
+async function clearSellinOnly(){if(!confirm(S.lang==='en'?'Remove the saved sell-in cost data?':'¿Eliminar los datos de coste (sell-in) guardados?'))return;SELLIN_COST_MAP={};SELLIN_COST_MAP_BY_MONTH={};SELLIN_LOADED=false;try{window.storage&&await window.storage.delete('uk_sellin_v1');}catch(e){}buildMarginDataFromRows();if(S.view==='margin')renderMargin();renderUploadScreen();}
+
+function buildSalespersonDataFromRows(){
+  const months=[...new Set(S.rows.map(r=>r.month))].sort((a,b)=>a-b);
+  const MN={1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'};
+  SO_RAW.uk=months.map(m=>{
+    const rows=S.rows.filter(r=>r.month===m);
+    return{m:MN[m]||('M'+m),mn:m,qty:rows.reduce((s,r)=>s+r.qty,0),rev:rows.reduce((s,r)=>s+(r.price||0)*r.qty,0)};
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+(async function initUploadFlow(){
+  document.getElementById('uploadScreen').style.display = 'flex';
+  const hasTarifa = await loadTarifaFromStorage();
+  if (hasTarifa) {
+    Object.keys(PM).forEach(k => delete PM[k]);
+    Object.assign(PM, TARIFA_PM);
+  }
+  await loadSellinFromStorage();
+  const hasData = await loadData();
+  if (hasData && S.rows.length) {
+    buildCliDataFromRows();
+    buildMarginDataFromRows();
+    buildSalespersonDataFromRows();
+  }
+  renderUploadScreen();
+  if (hasData && S.rows.length) {
+    // Auto-jump straight to dashboard if there's already data from a previous session
+    showDashboard();
+    const mc = [...new Set(S.history.map(h => h.month))].length;
+    showMsg(L().msgRestored(S.rows.length, mc), 'ok');
+  }
+})();
+
+// Embedded sell-out data [month, country(0=NL 1=BE), article_code, qty, customer]
+const SO_ROWS = []; // populated dynamically on upload
+// Article code -> name
+const ART_MAP = {}; // populated dynamically on upload
+// Price map
+const PM_MAP = {};
+Object.assign(PM_MAP, PM);
+
+
+// ═══════════════════════════════════════════════
+// CLIENT DATA & RENDER
+// ═══════════════════════════════════════════════
+const CLI_DATA = []; // populated dynamically on upload via buildCliDataFromRows()
+
+function buildCliDataFromRows(){
+  CLI_DATA.length = 0;
+  if (!S.rows || !S.rows.length) return;
+  const mn_es = {1:'Ene',2:'Feb',3:'Mar',4:'Abr',5:'May',6:'Jun',7:'Jul',8:'Ago',9:'Sep',10:'Oct',11:'Nov',12:'Dic'};
+
+  const custMap = {};
+  for (const r of S.rows) {
+    if (!r.customer) continue;
+    const cid = r.customer;
+    if (!custMap[cid]) custMap[cid] = {id: cid, country: 'UK', rev:0, qty:0, months:new Set(), prods:{}, monthly:{}};
+    const c = custMap[cid];
+    const rev = (r.price||0) * r.qty;
+    c.rev += rev;
+    c.qty += r.qty;
+    c.months.add(r.month);
+    if (!c.monthly[r.month]) c.monthly[r.month] = {qty:0, rev:0};
+    c.monthly[r.month].qty += r.qty;
+    c.monthly[r.month].rev += rev;
+    const k = r.code;
+    if (!c.prods[k]) c.prods[k] = {a: r.name, q:0, r:0, m:new Set()};
+    c.prods[k].q += r.qty;
+    c.prods[k].r += rev;
+    c.prods[k].m.add(r.month);
+  }
+
+  const prodCounts = {};
+  for (const r of S.rows) {
+    const k = r.code;
+    if (!prodCounts[k]) prodCounts[k] = {a: r.name, r:0, custs:new Set()};
+    prodCounts[k].r += (r.price||0) * r.qty;
+    if (r.customer) prodCounts[k].custs.add(r.customer);
+  }
+  const popular = Object.entries(prodCounts)
+    .filter(([k,v]) => v.custs.size >= 3)
+    .sort((a,b) => b[1].r - a[1].r)
+    .map(([k,v]) => ({code: parseInt(k), a: v.a, r: Math.round(v.r), n: v.custs.size}));
+
+  const sorted = Object.values(custMap).sort((a,b) => b.rev - a.rev);
+  for (const c of sorted) {
+    const bought = Object.values(c.prods).sort((a,b) => b.r - a.r).slice(0,15)
+      .map(p => ({a: p.a, q: p.q, r: Math.round(p.r*100)/100, m: p.m.size}));
+    const boughtCodes = new Set(Object.keys(c.prods).map(Number));
+    const opps = popular.filter(p => !boughtCodes.has(p.code)).slice(0,5)
+      .map(p => ({a: p.a, r: p.r, n: p.n}));
+    const monthly = Object.entries(c.monthly).sort((a,b) => a[0]-b[0])
+      .map(([m,v]) => ({m: mn_es[parseInt(m)] || ('M'+m), qty: v.qty, rev: Math.round(v.rev*100)/100}));
+    CLI_DATA.push({
+      id: c.id, country: c.country, qty: c.qty, rev: Math.round(c.rev*100)/100,
+      n_prod: Object.keys(c.prods).length, months: c.months.size,
+      monthly, bought, opps
+    });
+  }
+}
+
+let cliFilter='all',cliSort='rev',cliSelected=null,cliSearchTerm='';
+
+function setCliFilter(f,btn){cliFilter=f;document.querySelectorAll('#viewClients .mpill').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderCliList();}
+function setCliSort(s,btn){cliSort=s;document.querySelectorAll('#viewClients .dbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderCliList();}
+function filterClients(){cliSearchTerm=document.getElementById('cliSearch').value.toLowerCase().trim();renderCliList();}
+
+function getFilteredClients(){
+  let data=CLI_DATA;
+  if(cliSearchTerm)data=data.filter(c=>c.id.includes(cliSearchTerm));
+  return[...data].sort((a,b)=>b[cliSort]-a[cliSort]);
+}
+
+function renderCliList(){
+  const data=getFilteredClients();
+  const el=document.getElementById('cliList');
+  if(!el)return;
+  document.getElementById('cliCount').textContent=data.length+(S.lang==='en'?' clients':' clientes');
+  el.innerHTML=data.map(c=>{
+    const flag='🇬🇧';
+    const active=cliSelected===c.id;
+    const bar=Math.min(100,c.rev/(data[0].rev||1)*100).toFixed(0);
+    const f2=DISC_F[S.disc];
+    return`<div onclick="selectClient('${c.id}')" style="padding:10px 12px;border-bottom:1px solid #f0f0f0;cursor:pointer;background:${active?'#fdf5f2':'#fff'};border-left:3px solid ${active?'#c45c3a':'transparent'};">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+        <span style="font-size:12px;font-weight:${active?'bold':'500'}">${flag} ${c.id}</span>
+        <span style="font-size:11px;font-weight:bold;color:#1a1a2e">£${Math.round(c.rev*f2).toLocaleString('en-GB')}</span>
+      </div>
+      <div style="height:2px;background:#f0ede8;border-radius:2px;overflow:hidden;margin-bottom:4px;"><div style="height:100%;width:${bar}%;background:#c45c3a;border-radius:2px;"></div></div>
+      <div style="font-size:10px;color:#999;">${c.n_prod} prods · ${c.months}M · ${c.qty} uds.</div>
+    </div>`;
+  }).join('');
+}
+
+function selectClient(id){
+  cliSelected=id;
+  renderCliList();
+  const c=CLI_DATA.find(x=>x.id===id);
+  if(!c)return;
+  const L2=TR[S.lang];
+  const flag='🇬🇧';
+  const cLabel='United Kingdom';
+  const f2=DISC_F[S.disc];
+
+  // KPIs
+  const kpis=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:12px;">
+    <div class="kpi ac"><div class="kpi-lbl">${L2.cliRevLabel}</div><div class="kpi-val" style="font-size:17px">£${Math.round(c.rev*f2).toLocaleString('en-GB')}</div><div class="kpi-sub">YTD</div></div>
+    <div class="kpi gr"><div class="kpi-lbl">${L2.cliQtyLabel}</div><div class="kpi-val" style="font-size:17px">${c.qty.toLocaleString('en-GB')}</div><div class="kpi-sub">uds.</div></div>
+    <div class="kpi bl"><div class="kpi-lbl">${L2.cliProdLabel}</div><div class="kpi-val" style="font-size:17px">${c.n_prod}</div><div class="kpi-sub">refs</div></div>
+    <div class="kpi gd"><div class="kpi-lbl">${L2.cliMonthsLabel}</div><div class="kpi-val" style="font-size:17px">${c.months}/5</div><div class="kpi-sub">activo</div></div>
+  </div>`;
+
+  // Mini bar chart monthly
+  const maxR=Math.max(...c.monthly.map(r=>r.rev),1);
+  const bars=c.monthly.map((r,i)=>{
+    const h=Math.round(r.rev/maxR*55);
+    const x=8+i*52;
+    return`<rect x="${x}" y="${62-h}" width="38" height="${h}" fill="rgba(196,92,58,.75)" rx="2"/>
+      <text x="${x+19}" y="75" text-anchor="middle" font-size="9" fill="#777">${r.m}</text>
+      <text x="${x+19}" y="${58-h}" text-anchor="middle" font-size="8" fill="#555">£${Math.round(r.rev*f2/1000)}k</text>`;
+  }).join('');
+  const svgW=8+c.monthly.length*52+8;
+  const chart=c.monthly.length>0?`<div style="margin-bottom:12px;">
+    <div style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">${L2.cliMonthly}</div>
+    <svg width="100%" height="80" viewBox="0 0 ${svgW} 80">${bars}</svg>
+  </div>`:'';
+
+  // Bought table
+  const thStyle='font-size:9px;color:#777;text-transform:uppercase;padding:0 0 5px 0;border-bottom:1px solid #e0e0e0;text-align:left;';
+  const thR=thStyle+'text-align:right;padding-left:8px;';
+  const bRows=c.bought.map((b,i)=>{
+    const mBadge=`<span style="font-size:9px;background:${b.m>=5?'#e8f5f0':'#f0ede8'};color:${b.m>=5?'#2a7d5f':'#777'};padding:1px 4px;border-radius:2px">${b.m}M</span>`;
+    return`<tr><td style="padding:4px 5px 4px 0;font-size:11.5px;border-bottom:1px solid #f5f5f5">${i+1}. ${b.a}</td>
+      <td style="text-align:right;font-size:11px;padding:4px 0;border-bottom:1px solid #f5f5f5;white-space:nowrap">${b.q}</td>
+      <td style="text-align:right;font-size:11px;font-weight:bold;padding:4px 0 4px 8px;border-bottom:1px solid #f5f5f5;white-space:nowrap">£${Math.round(b.r*f2).toLocaleString('en-GB')}</td>
+      <td style="text-align:right;padding:4px 0 4px 8px;border-bottom:1px solid #f5f5f5">${mBadge}</td></tr>`;
+  }).join('');
+  const bought=`<div style="margin-bottom:12px;">
+    <div style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${L2.cliBought} (${c.bought.length})</div>
+    <div style="max-height:260px;overflow-y:auto;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr><th style="${thStyle}">${S.lang==='en'?'Product':'Producto'}</th><th style="${thR}">${S.lang==='en'?'Units':'Uds.'}</th><th style="${thR}">£</th><th style="${thR}">${S.lang==='en'?'Mo.':'Mes'}</th></tr></thead>
+      <tbody>${bRows}</tbody>
+    </table></div>
+  </div>`;
+
+  // Opportunities
+  const opps=c.opps.length>0?`<div>
+    <div style="font-size:9px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">${L2.cliOpps} (${c.opps.length})</div>
+    <div style="font-size:10px;color:#2a7d5f;margin-bottom:8px;">${L2.cliOppNote}</div>
+    ${c.opps.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f5f5f5;">
+      <div>
+        <div style="font-size:12px;font-weight:500">⭐ ${o.a}</div>
+        <div style="font-size:10px;color:#777;">${L2.cliBoughtBy} <strong>${o.n}</strong> ${L2.cliClients} · £${Math.round(o.r*f2).toLocaleString('en-GB')} total</div>
+      </div>
+    </div>`).join('')}
+  </div>`:'';
+
+  document.getElementById('cliDetail').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #e0e0e0;">
+      <div><div style="font-size:15px;font-weight:bold;">${flag} ${S.lang==='en'?'Client':'Cliente'} ${c.id}</div>
+      <div style="font-size:11px;color:#777;">${cLabel} · YTD</div></div>
+    </div>
+    ${kpis}${chart}${bought}${opps}`;
+}
+
+function renderClients(){
+  renderCliList();
+  const data=getFilteredClients();
+  if(data.length){
+    if(!cliSelected||!data.find(x=>x.id===cliSelected))cliSelected=data[0].id;
+    selectClient(cliSelected);
+  }
+}
+
+</script>
+
+<!-- ═══ VIEW: CLIENTES ═══ -->
+<div class="view" id="viewClients">
+  <div style="margin-bottom:12px;">
+    <div style="font-size:13px;font-weight:bold;margin-bottom:4px;" data-i="cliTitle">Client Analysis</div>
+    <div style="font-size:11px;color:#777;" data-i="cliNote">Products purchased and sales opportunities</div>
+  </div>
+
+  <!-- FILTERS -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <input id="cliSearch" type="text" placeholder="Search client…" oninput="filterClients()"
+      style="font-size:12px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;width:160px;font-family:Arial,sans-serif;">
+    <button class="mpill on" onclick="setCliFilter('all',this)" data-i="cliAll">All 🇬🇧</button>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+      <span style="font-size:11px;color:#777;">Ordenar:</span>
+      <button class="dbtn on" onclick="setCliSort('rev',this)" data-i="cliSortRev">Highest revenue</button>
+      <button class="dbtn" onclick="setCliSort('n_prod',this)" data-i="cliSortProd">Most products</button>
+      <button class="dbtn" onclick="setCliSort('months',this)" data-i="cliSortMonths">Most active</button>
+    </div>
+  </div>
+
+  <!-- CLIENT LIST + DETAIL PANEL -->
+  <div style="display:grid;grid-template-columns:280px 1fr;gap:12px;min-height:500px;">
+    <!-- LEFT: list -->
+    <div>
+      <div style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;" id="cliCount">0 clients</div>
+      <div id="cliList" style="max-height:620px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:6px;background:#fff;"></div>
+    </div>
+    <!-- RIGHT: detail -->
+    <div id="cliDetail" style="background:#fff;border:1px solid #e8e8e8;border-radius:6px;padding:16px;min-height:400px;">
+      <div style="display:flex;align-items:center;justify-content:center;height:200px;color:#bbb;font-size:13px;">
+        ← Select a client
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
